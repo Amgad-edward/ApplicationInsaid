@@ -1,0 +1,30 @@
+﻿@typeparam Madel
+
+<div class="container mt-5">
+    
+    @if(Items is not null)
+    {
+        <h1>@value</h1>
+        <div class="form-group">
+        <label>Select Name</label>
+        <select class="form-control" @bind="@value" >
+            <option value="0">select</option>
+            @foreach (var item in Items)
+            {
+                <option value="@item">@item</option>
+            }
+        </select>
+   </div>
+    }
+</div>
+
+
+@code {
+
+    [Parameter]
+    public IEnumerable<Madel>? Items { get; set; }
+
+    Madel? value = default;
+
+
+}
