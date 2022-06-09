@@ -1,0 +1,38 @@
+﻿@inject IUntiWork db
+
+@if(companies != null)
+{
+    <BlazoredTypeahead @bind-Value="OtherCompanies" @onselectionchange="async ()=> await eventCallback.InvokeAsync(OtherCompanies.Id)" SearchMethod="AutoCompelet">
+         <SelectedTemplate>
+             @context.Name
+         </SelectedTemplate>
+         <ResultTemplate>
+             @context.Name &nbsp; <span class="text-black-50">@context.NameManegar</span>
+         </ResultTemplate>
+    </BlazoredTypeahead>
+}
+else
+{
+    <p class="text-danger">لا نوجد شركات مسجلة</p>
+}
+
+@code {
+
+    [Parameter]
+    public EventCallback<int> eventCallback { get; set; }
+
+    IEnumerable<OtherCompanies>? companies = null;
+    OtherCompanies? OtherCompanies = new OtherCompanies();
+
+    protected override async Task OnInitializedAsync()
+    {
+        companies = await db.OtherCompanies.GetAsyncNoTracking(x=>x.IsCompanyToBenefit);
+    }
+
+
+    async Task<IEnumerable<OtherCompanies>> AutoCompelet(string text)
+    {
+        return await Task.FromResult(companies.Where(x => x.Name.ToLower().Contains(text)));
+    }
+
+}

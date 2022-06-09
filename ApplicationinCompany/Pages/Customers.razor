@@ -1,0 +1,269 @@
+﻿@page "/customers"
+@inject IUntiWork db
+@inject IToastService toastr
+@inject ISessionStorageService session
+
+<PageTitle>Customers</PageTitle>
+
+<div class="container rightdv">
+    <div class="row justify-content-between">
+        <div class=col-md-6>
+            <h3 class="animate__animated animate__fadeIn">العمـــلاء <span class="icofont-male text-info"></span></h3>
+        </div>
+        <div>
+            <h3>Customers <span class="icofont-female text-info"></span></h3>
+        </div>
+    </div>
+    <hr />
+    <div class="row mb-4 mt-2">
+        <button class="btn btn-primary w-25" type="button" data-toggle="collapse" data-target="#addcustomers" aria-expanded="false" aria-controls="addcustomers">
+            اضافة عميل جديد
+        </button>
+        <a class="btn btn-info mr-3" title="اضافة ملف اكسيل او جيسون باسماء العملاء" href="addfilecustomer">اضافة ملف <i class="bi bi-file-check"></i> </a>
+    </div>
+    <div class="collapse" id="addcustomers">
+        <div class="card card-body">
+            @if (!lodding)
+            {
+                <div class="card animate__animated animate__fadeIn">
+                    <div class="card-body">
+                        <h4 class="display-5 text-black-50">اضافة عميل جديد <span class="icofont-contact-add"></span></h4>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <EditForm Model="_customer" OnValidSubmit="AddnewCustomer">
+                                    <DataAnnotationsValidator></DataAnnotationsValidator>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group text-right">
+                                                <label>اسم العميل</label>
+                                                <InputText class="form-control" @bind-Value="_customer.NameCustomer"></InputText>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group text-right">
+                                                <label>ارقام الهواتف</label>
+                                                <InputText class="form-control" @bind-Value="_customer.Phones"></InputText>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group text-right">
+                                                <label>رقم هاتف للاستقبال رسائل</label>
+                                                <InputText class="form-control" @bind-Value="_customer.PhoneSms"></InputText>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group text-right">
+                                                <label>العنوان</label>
+                                                <InputText class="form-control" @bind-Value="_customer.Address"></InputText>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group text-right">
+                                                <label>البريد الالكترونى</label>
+                                                <InputText class="form-control" @bind-Value="_customer.Email"></InputText>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label>الوظيفة</label>
+                                            <InputText class="form-control" @bind-Value="_customer.Jop"></InputText>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group text-right">
+                                                <label>رقم البطاقة</label>
+                                                <InputText class="form-control" @bind-Value="_customer.IDEgy"></InputText>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <button type="submit" class="btn btn-primary mt-2 w-100">اضافة <span class="icofont-plus"></span></button>
+                                        </div>
+
+                                    </div>
+
+                                </EditForm>
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card animate__fadeIn animate__fadeOut">
+                    <div class="card-body">
+                        <h6>جارى التحميل</h6>
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden"></span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <hr />
+
+    <div style="margin-bottom:100px">
+        <RadzenGrid AllowFiltering="true" ColumnWidth="150px" TItem="Customer" Data="@AllCustomers"
+                    AllowSorting="true" PageSize="10" AllowPaging="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+            <Columns>
+                <RadzenGridColumn TItem="Customer" Property="NameCustomer" Title="اسم العميل"></RadzenGridColumn>
+                <RadzenGridColumn TItem="Customer" Property="Phones" Title="ارقام الهاتف"></RadzenGridColumn>
+                <RadzenGridColumn TItem="Customer" Property="Address" Title="عنوان"></RadzenGridColumn>
+                <RadzenGridColumn TItem="Customer" Property="IDEgy" Title="رقم قومى"></RadzenGridColumn>
+                <RadzenGridColumn TItem="Customer" Context="data" Title="#####">
+                    <Template>
+                        @if (isadmin || dataentry)
+                        {
+                           <Button T_type="Customer" ModalID="editcustomer" eventBack="EditCustomerInfo" Class="btn-info" TheValue="data">
+                            <Render>
+                                <i class="bi bi-pencil-square"></i>
+                            </Render>
+                           </Button>
+                            
+                        }
+                        @if (isadmin || Maneiger)
+                        {
+                          <a class="btn btn-outline-info mr-1" href="/thedetialcustomer/@data.Id" title="تفاصيل"><i class="bi bi-paypal"></i></a>
+                        }
+
+                    </Template>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+
+
+</div>
+
+
+
+<!---------------------------------- Models --------------------------------->
+<!-- Modal Edit -->
+<div class="modal fade" id="editcustomer" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit Customer</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (ShowEdite)
+            {
+                <EditForm Model="_customeredit" OnValidSubmit="UpdateCustomer">
+                    <div class="modal-body rightdv">
+                        <div class="row">
+                            <div class="col-md-10">
+                                <div class="form-group text-right">
+                                    <label>الاسم</label>
+                                    <InputText @bind-Value="@_customeredit.NameCustomer" class="form-control"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>العنوان</label>
+                                    <InputText @bind-Value="@_customeredit.Address" class="form-control"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>ارقام هواتف</label>
+                                    <InputText @bind-Value="@_customeredit.Phones" class="form-control"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>هاتف الرسائل</label>
+                                    <InputText @bind-Value="@_customeredit.PhoneSms" class="form-control"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>رقم البطاقة</label>
+                                    <InputText class="form-control" @bind-Value="_customeredit.IDEgy"></InputText>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+
+    Customer _customer = new Customer();
+    IEnumerable<Customer>? AllCustomers = null;
+    bool lodding = false;
+    Customer? _customeredit = new Customer();
+    bool ShowEdite = false;
+    bool isadmin = false;
+    bool dataentry = false;
+    bool Maneiger = false;
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        isadmin = log.ISAdmin;
+        Maneiger = log.Emplyee.TheJop == Jop.Maneger || log.Emplyee.TheJop == Jop.ISManegerMarketing;
+        dataentry = log.Emplyee.TheJop == Jop.DataEntry;
+        await getCustomers();
+    }
+
+    void searched(string Name)
+    {
+        if (AllCustomers is not null)
+        {
+            var names = AllCustomers.Where(x => x.NameCustomer.ToLower().Contains(Name));
+            AllCustomers = names;
+        }
+    }
+
+    void EditCustomerInfo(Customer customer)
+    {
+        this._customeredit = customer;
+        ShowEdite = true;
+    }
+
+    async Task UpdateCustomer()
+    {
+        await db.SaveChangeAsync();
+        _customeredit = new Customer();
+        ShowEdite = false;
+        await getCustomers();
+    }
+
+
+    async Task getCustomers()
+    {
+        AllCustomers = await db.Customer.GetAllAsycn();
+    }
+
+    async Task AddnewCustomer()
+    {
+        lodding = true;
+        if (!await db.Customer.AnyAsync(x => x.NameCustomer == _customer.NameCustomer))
+        {
+
+            _customer.GideID = Guid.NewGuid().ToString();
+            await db.Customer.AddAsync(_customer);
+            _customer = new Customer();
+            toastr.ShowSuccess("Done Add");
+            await getCustomers();
+        }
+        else
+        {
+            toastr.ShowInfo("هذا العميل مضاف");
+        }
+        lodding = false;
+    }
+
+}

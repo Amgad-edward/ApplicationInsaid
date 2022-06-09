@@ -1,0 +1,220 @@
+﻿@page "/thedetialcustomer/{id:int}"
+@inject IUntiWork db
+@inject ISessionStorageService session
+
+
+<div class="container rightdv">
+    @if (customer is not null)
+    {
+        <HeadPage NameArbic="@($"وحدات العميل / {customer.NameCustomer.GetFirstAndlast()}")" NameEnglish="@($"Units /{customer.NameCustomer.NameToEnglish()}")"></HeadPage>
+        @if (customer.Units != null)
+        {
+            <div class="text-right">
+                <h1>الوحدات المشترى</h1>
+            </div>
+            @foreach (var unit in customer.Units)
+            {
+                <div class="row justify-content-between mb-2">
+                    <div class="col-md-8 text-right">
+                        <h4 class="text-info">@unit.Titel</h4>
+                        <h6 class="text-black-50">مساحة : @unit.Unit.SpaceMater متر مربع</h6>
+                        @if (unit.FinishUnit is not null)
+                        {
+                            <div class="row">
+                                <div class="col-md-8 text-right">
+                                    <h4 class="text-secondary">تم الاتفاق على التشطيب هذة الوحدة</h4>
+                                </div>
+                                <div class="col-md-4 text-right">
+                                    <p class="@(unit.FinishUnit.DoneFinishing?"text-success" : "text-danger")">@(unit.FinishUnit.DoneFinishing  ?"تم انهاء العمل التشطيب" :"لم يتم الانتهاء")</p>
+                                </div>
+                            </div>
+                            @if (isadmin)
+                            {
+                                <div class="row">
+                                    <div class="col-md-8 text-right">
+                                        <h5 class="text-dark">اجمالى مبلغ التشطيب : @unit.FinishUnit.TotalPriceBuy.ToMoney() (@unit.FinishUnit.TotalPriceBuy.ConvertNumberToText() جنيها)</h5>
+                                    </div>
+                                    <div class="col-md-4 text-right">
+                                        <p class="text-black-50">بسعر متر : @unit.FinishUnit.PRICEMETER.ToMoney() متر مربع</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 text-right">
+                                        <h5 class="text-success">اجمالى مبلغ المسدد : @unit.FinishUnit.TotalPayment.ToMoney() (@unit.FinishUnit.TotalPayment.ConvertNumberToText() جنيها)</h5>
+                                    </div>
+                                    <div class="col-md-6 text-right">
+                                        <h5 class="text-danger">اجمالى المتبقى : @unit.FinishUnit.TotalRemaining.ToMoney() (@unit.FinishUnit.TotalRemaining.ConvertNumberToText() جنيها)</h5>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        @if (isadmin)
+                        {
+                            <div class="row">
+                                <div class="col-md-8 text-right">
+                                    <h6>اجمالى السعر : @unit.Total.ToMoney() (@unit.Total.ConvertNumberToText() جنيها)</h6>
+                                </div>
+                                <div class="col-md-4 text-right">
+                                    <h6>سعر المتر : @unit.PriceMeter.ToMoney() (@unit.PriceMeter.ConvertNumberToText() جنيها للمتر مربع)</h6>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8 text-right">
+                                    <h6> المسدد : @unit.TotalPayment.ToMoney() (@unit.TotalPayment.ConvertNumberToText() جنيها)</h6>
+                                </div>
+                                <div class="col-md-4 text-right">
+                                    <h6 class="text-danger"> المتبقى: @unit.TotalRemaining.ToMoney() (@unit.TotalRemaining.ConvertNumberToText() جنيها للمتر مربع)</h6>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div>
+                        <img src="@unit.Unit.MapImage.ShowImage()" class="img-thumbnail" style="width:300px" />
+                    </div>
+                </div>
+                <hr />
+            }
+        }
+        @if (customer.FinishesUnits != null)
+        {
+            <div class="text-right">
+                <h1>الوحدات تشطيب</h1>
+            </div>
+            @foreach (var unit in customer.FinishesUnits)
+            {
+                <div class="row justify-content-between">
+                    <div class="col-md-8 text-right">
+                        <h4>@unit.Category.CategoryName</h4>
+                        <p>@unit.Information</p>
+                        @if (isadmin)
+                        {
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5>اجمالى المبلغ : @unit.TotalPriceBuy.ToMoney() (@unit.TotalPriceBuy.ConvertNumberToText() جنيها)</h5>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5>بقمية المتر : @unit.PRICEMETER.ToMoney() (@unit.PRICEMETER.ConvertNumberToText() جنيها للمتر)</h5>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h5>اجمالى المسدد : @unit.TotalPayment.ToMoney() (@unit.TotalPayment.ConvertNumberToText() جنيها)</h5>
+                                </div>
+                                <div class="col-md-4">
+                                    <h5 class="text-danger">اجمالى المتبقى : @unit.TotalRemaining.ToMoney() (@unit.TotalRemaining.ConvertNumberToText() جنيها )</h5>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="row">
+                        @if (customer.FinishesUnits.SelectMany(im => im.ImageDesignFinishes) != null)
+                        {
+                            @foreach (var img in customer.FinishesUnits.SelectMany(image => image.ImageDesignFinishes))
+                            {
+                                <img src="@img.Image.ShowImage()" class="img-thumbnail" style="width:200px" />
+                            }
+                        }
+                    </div>
+                </div>
+                <hr />
+            }
+        }
+
+        @if (customer.Reports != null)
+        {
+            <div class="text-right">
+                <h1>تقارير</h1>
+            </div>
+            <ShowTable itemtype="Report" Items="@customer.Reports" TheadClass="thead-dark">
+                <Columns>
+                    <th>تواصل عن طريق</th>
+                    <th>الموضوع والتعليق</th>
+                    <th>النتيجة</th>
+                </Columns>
+                <Rows>
+                    <td class="text-right">
+                        @context.Emplyee.Name
+                        <p class="text-black-50">@(@context.Telephone ?"اتصال هاتفى" : "واتس اب")</p>
+                        <p>@(context.Date.HasValue? context.Date.Value.ToDate() : "")</p>
+                    </td>
+                    <td class="text-right">
+                        <h5>@context.Titel</h5>
+                        <p>@context.Comment</p>
+                    </td>
+                    <td class="text-center">
+                        @if (context.DoNotAgree)
+                        {
+                            <span class="text-danger">غير متجاوب</span>
+                        }
+                        else if (context.IsOkyDone)
+                        {
+                            <span class="text-dark"> متجاوب</span>
+                        }
+                        else if (context.BackcallHim)
+                        {
+                            <span class="text-dark">اتصل فى وقت لاحق</span>
+                        }
+                        else if (context.HeIsCome)
+                        {
+                            <span class="text-success">موافق</span>
+                        }
+                        else
+                        {
+                            <span class="text-black-50">لم يتم الاتصال بعد</span>
+                        }
+                    </td>
+
+                </Rows>
+            </ShowTable>
+
+        }
+    }
+</div>
+
+
+
+@code {
+
+    [Parameter]
+    public int id { get; set; }
+
+    [Inject]
+    public NavigationManager? nav { get; set; }
+
+    Customer? customer = null;
+
+    bool isadmin = false;
+    bool manegar = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        isadmin = log.ISAdmin;
+        manegar = log.Emplyee.TheJop == Jop.ISManegerEngineer;
+        if (isadmin || manegar)
+            await getcustomer();
+        else
+            nav.NavigateTo("");
+    }
+
+    async Task getcustomer()
+    {
+        customer = await db.Customer.Include(s => s.Units).ThenInclude(u => u.Unit).ThenInclude(p => p.Project)
+                          .Include(s => s.Units).ThenInclude(u => u.Unit).ThenInclude(p => p.Category)
+                          .Include(s => s.Units).ThenInclude(u => u.Unit).ThenInclude(p => p.Floor)
+                          .Include(s => s.Units).ThenInclude(u => u.FinishUnit).ThenInclude(s => s.FinishCosts).ThenInclude(w => w.ManeyPaymentCosts)
+                          .Include(s => s.Units).ThenInclude(u => u.FinishUnit).ThenInclude(s => s.PaymentMoney)
+                          .Include(s => s.Units).ThenInclude(u => u.FinishUnit).ThenInclude(im => im.ImageDesignFinishes)
+                          .Include(s => s.Units).ThenInclude(p => p.PaymentMoney)
+                          .Include(u => u.Units).ThenInclude(e => e.ByEmplyee)
+                          .Include(f => f.FinishesUnits).ThenInclude(s => s.FinishCosts).ThenInclude(w => w.ManeyPaymentCosts)
+                          .Include(f => f.FinishesUnits).ThenInclude(s => s.Category)
+                          .Include(f => f.FinishesUnits).ThenInclude(d => d.PaymentMoney)
+                          .Include(f => f.FinishesUnits).ThenInclude(im => im.ImageDesignFinishes)
+                          .Include(reports => reports.Reports).ThenInclude(e => e.Emplyee)
+                          .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+
+
+    }
+
+}

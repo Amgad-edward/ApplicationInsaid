@@ -1,0 +1,79 @@
+﻿@page "/"
+@inject IUntiWork db
+@inject IToastService toastr
+@inject ISessionStorageService session
+
+<PageTitle>Welcome Page</PageTitle>
+
+
+<div class="container rightdv">
+
+    @if (user.Emplyee != null)
+    {
+        @if (Reports is not null && Reports.Count() > 0)
+        {
+
+            <div class="text-right">
+                <h5 class="text-black-50">التقارير والمهام المطلوبة</h5>
+                <hr class="text-info" />
+                @foreach (var report in Reports)
+                {
+                    <GetReports DB="db" Done="GetReposrtstoEmplyee" Report="report"></GetReports>
+                }
+            </div>
+        }
+        @if(AllTasks is not  null && AllTasks.Count() > 0)
+        {
+               <h5 class="text-secondary">مهام محددة مطلوبة</h5>
+               <hr/>
+            <div class="row text-right" style="margin-bottom:7%">
+                @foreach (var task in AllTasks)
+                {
+                    <GetTasksCarry DB="db" Done="GetTasksCarry" taskCarry="task"></GetTasksCarry>
+                }
+            </div>
+        }
+
+    }
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+@code {
+
+    LogAdmins? user = new LogAdmins();
+    IEnumerable<Report>? Reports = null;
+    IEnumerable<TaskCarry>? AllTasks = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await session.GetItemAsync<LogAdmins>("loguser");
+        await GetReposrtstoEmplyee();
+        await GetTasksCarry();
+    }
+
+    async Task GetReposrtstoEmplyee()
+    {
+        Reports = await db.Reports.Include(c => c.Customer).ThenInclude(r=>r.Reports)
+        .Where(x => x.IdEmplyee == user.IdEmplyee && !x.DoneReport).ToListAsync();
+    }
+
+    async Task GetTasksCarry()
+    {
+        AllTasks = await db.Tasks.GetAsync(x => x.IdEmplyee == user.IdEmplyee && !x.DoneTask);
+    }
+
+
+    
+
+}

@@ -1,0 +1,207 @@
+﻿@page "/addfilecustomer"
+@using Newtonsoft.Json
+@using OfficeOpenXml
+
+@inject IUntiWork db
+
+<div class="container rightdv">
+    <div class="row justify-content-between">
+        <div class=col-md-6>
+            <h3 class="animate__animated ">اضافة ملف بيانات عملاء <span class="icofont-male text-info"></span></h3>
+        </div>
+        <div>
+            <h3>Add Customers <span class="icofont-female text-info"></span></h3>
+        </div>
+    </div>
+    <hr />
+    <div class="row">
+        <div class="col-md-5">
+            <div class="custom-file text-right mt-3">
+                <InputFile class="custom-file-input" OnChange="GetFiles"></InputFile>
+                <label class="custom-file-label">File</label>
+            </div>
+        </div>
+        <div class="col-md-4 mt-2">
+            <button type="button" class="btn btn-dark mt-2" @onclick="AddindCustomers">تسجيل العملاء</button>
+        </div>
+    </div>
+
+    @if (AddCustomers != null)
+    {
+        <div class="mb-4 mt-4 text-right col-4">
+            <input type="text" @bind-value="search" class="form-control" />
+            <button class="btn btn-primary" @onclick="ShowThis">اظهار</button>
+        </div>
+        @if (IsAdding)
+        {
+            <div class="progress mt-2 mb-2">
+                <div class="progress-bar" role="progressbar" style="width: @Process%;" aria-valuenow="@Process" aria-valuemin="0" aria-valuemax="100">@Process%</div>
+            </div>
+        }
+        <div class="mt-4">
+            <ShowTable itemtype="Customer" TheadClass="thead-light" Context="C" Class="table-light" Items="AddCustomers">
+                <Columns>
+                    <th>الاسم</th>
+                    <th>الوظيفة</th>
+                    <th>العنوان</th>
+                    <th>الهاتف</th>
+                    <th>رقم قومى</th>
+                     <th>بريد الكترونى</th>
+                    <th>حذف</th>
+                </Columns>
+                <Rows>
+                    <td>@C.NameCustomer</td>
+                    <td>@C.Jop</td>
+                    <td>@C.Address</td>
+                    <td>@C.Phones</td>
+                    <td>@C.IDEgy</td>
+                    <td>@C.Email</td>
+                    <td>
+                        <Button T_type="string" eventBack="deleteCustomer" Class="btn-danger" TheValue="C.GideID">
+                            <Render>
+                                <i class="bi bi-trash"></i>
+                            </Render>
+                        </Button>
+                    </td>
+                </Rows>
+            </ShowTable>
+        </div>
+
+    }
+
+
+</div>
+
+@code {
+    IEnumerable<Customer>? _customers = null;
+
+    DataTable? _CustomerSelect = null;
+
+    List<Customer>? AddCustomers = null;
+    string search = "";
+    bool IsAdding = false;
+    double Process = 0;
+    async Task GetFiles(InputFileChangeEventArgs inputFile)
+    {
+        if (inputFile.FileCount > 0)
+        {
+            if (Path.GetExtension(inputFile.File.Name) == ".json")
+            {
+                var stream = inputFile.File.OpenReadStream(inputFile.File.Size);
+                using (var readstream = new StreamReader(stream))
+                {
+                    var strjson = await readstream.ReadToEndAsync();
+                    _customers = JsonConvert.DeserializeObject<IEnumerable<Customer>>(strjson);
+                    AddCustomers = _customers.ToList();
+                }
+            }
+            else if (inputFile.File.Name.GettypeFile() == ".xlsx")
+            {
+
+                using (var readstream = new MemoryStream())
+                {
+                    await inputFile.File.OpenReadStream(inputFile.File.Size).CopyToAsync(readstream);
+                    ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                    using (var excel = new ExcelPackage(readstream))
+                    {
+                        var Sheet = excel.Workbook.Worksheets.FirstOrDefault();
+                        var Columns = Sheet.Dimension.End.Column;
+                        var RowsCount = Sheet.Dimension.End.Row;
+                        if (RowsCount > 1)
+                        {
+                            var list = new List<Customer>();
+                            for (var row = 1; row <= RowsCount; row++)
+                            {
+                                if(row > 1)
+                                {
+                                    var customer = new Customer();
+                                    for (var col = 1; col <= Columns; col++)
+                                    {
+                                         if(Sheet.Cells[1 , col].Text.ToLower().Contains("name") || Sheet.Cells[1 , col].Text.ToLower().Contains("الاسم"))
+                                        {
+                                          customer.NameCustomer = Sheet.Cells[row, col].Text;
+                                        }
+                                        else if (Sheet.Cells[1 , col].Text.ToLower().Contains("address") || Sheet.Cells[1 , col].Text.ToLower().Contains("عنوان"))
+                                        {
+                                            customer.Address = Sheet.Cells[row, col].Text;
+                                        }
+                                        else if (Sheet.Cells[1 , col].Text.ToLower().Contains("phone") || Sheet.Cells[1 , col].Text.ToLower().Contains("هاتف موبيل"))
+                                        {
+                                            customer.Phones = Sheet.Cells[row, col].Text;
+                                        }
+                                        else if (Sheet.Cells[1 , col].Text.ToLower().Contains("id") || Sheet.Cells[1 , col].Text.ToLower().Contains("رقم قومى"))
+                                        {
+                                            customer.IDEgy = Sheet.Cells[row, col].Text;
+                                        }
+                                        else if (Sheet.Cells[1 , col].Text.ToLower().Contains("email") || Sheet.Cells[1 , col].Text.ToLower().Contains("بريد الكترونى"))
+                                        {
+                                            customer.Email = Sheet.Cells[row, col].Text;
+                                        }
+                                        else if (Sheet.Cells[1 , col].Text.ToLower().Contains("jop work") || Sheet.Cells[row , 1].Text.ToLower().Contains("العمل المهنة المؤهل"))
+                                        {
+                                            customer.Jop = Sheet.Cells[row, col].Text;
+                                        }
+                                    }
+                                  customer.GideID = Guid.NewGuid().ToString();
+                                   list.Add(customer);
+                                }
+
+                            }
+                            _customers = list;
+                            AddCustomers = list;
+                        }
+                       
+                    }
+
+                }
+            }
+        }
+    }
+
+    void deleteCustomer(string guid)
+    {
+        if (AddCustomers != null)
+        {
+            var modal = AddCustomers.FirstOrDefault(x => x.GideID == guid);
+            if (modal is not null)
+            {
+                AddCustomers.Remove(modal);
+            }
+        }
+    }
+
+    async Task ShowThis()
+    {
+        if (_customers != null)
+            AddCustomers = _customers.Where(x => x.Jop.Contains(search)).ToList();
+    }
+
+    async Task AddindCustomers()
+    {
+        if (AddCustomers != null)
+        {
+            IsAdding = true;
+            var Count = AddCustomers.Count;
+            var Counnter = 0d;
+            var listRemove = new List<Customer>();
+            foreach (var customer in AddCustomers)
+            {
+                Thread.Sleep(300);
+                ++Counnter;
+                if (!await db.Customer.AnyAsync(x => x.NameCustomer == customer.NameCustomer))
+                {
+                    await db.Customer.AddAsync(customer);
+                    listRemove.Add(customer);
+                }
+                Process = (int)Math.Round((Counnter / Count) * 100);
+                StateHasChanged();
+            }
+            IsAdding = false;
+            foreach (var item in listRemove)
+            {
+                AddCustomers.Remove(item);
+            }
+        }
+    }
+
+}

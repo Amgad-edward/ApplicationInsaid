@@ -1,0 +1,228 @@
+﻿@inject IUntiWork db
+
+@if (Report != null)
+{
+    <div class="row animate__animated animate__fadeIn">
+        <div class="col-md-12">
+            <p class="text-right">المطلوب : @Report.Titel</p>
+            <div class="row text-danger">
+                <div class="col-md-4 text-right">
+                    <h5>العميل : @Report.Customer.NameCustomer</h5>
+                </div>
+                <div class="col-md-4 text-right">
+                    <h5>ارقام الهاتف : @Report.Customer.Phones</h5>
+                </div>
+                <div class="col-md-4 text-right">
+                    <Button T_type="int" ModalID="oldreport" Class="btn-outline-dark" eventBack="getold" TheValue="@Report.idCustomer">
+                       <Render>
+                           <span>التقارير السابقة لهذا العميل</span>
+                       </Render>
+                    </Button>
+                </div>
+            </div>
+            <div class="form-group text-right">
+                <label>تعليق</label>
+                <textarea @bind="@Report.Comment" class="form-control"></textarea>
+            </div>
+            <table class="table table-bordered table-light">
+                <thead class="thead-light">
+                    <tr>
+                        <th>مقابلة ايجابية</th>
+                        <th>يفكر</th>
+                        <th>سيعاود الاتصال</th>
+                        <th>غير مهتم</th>
+                        <th>سياتى الى المقر</th>
+                        <th>اتصال هاتف</th>
+                        <th>تواصل واتس اب</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <input type="checkbox" @bind-value="Report.IsOkyDone" class="form-check" />
+                        </td>
+                        <td>
+                            <input type="checkbox" @bind-value="Report.Think" class="form-check" />
+                        </td>
+                        <td>
+                            <input type="checkbox" @bind-value="Report.BackcallHim" class="form-check" />
+                        </td>
+                        <td>
+                            <input type="checkbox" @bind-value="Report.DoNotAgree" class="form-check" />
+                        </td>
+                        <td>
+                            <input type="checkbox" @bind-value="Report.HeIsCome" class="form-check" />
+                        </td>
+                        <td>
+                            <input type="checkbox" @bind-value="Report.Telephone" class="form-check" />
+                        </td>
+                        <td>
+                            <input type="checkbox" @bind-value="Report.WhatsApp" class="form-check" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="btn btn-outline-primary" @onclick="isdone">تــــم</button>
+        </div>
+    </div>
+    <hr />
+}
+
+
+<!-- Modal -->
+<div class="modal fade" id="oldreport" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header rightdv">
+                <h5 class="modal-title text-right" id="staticBackdropLabel">تقارير سابقة</h5>
+              
+            </div>
+            <div class="modal-body">
+                @if (showOdreport)
+                {
+                    @if (OldReports != null)
+                    {
+                        <ShowTable itemtype="Report" Items="OldReports" Context="data" Class="table-dark">
+                            <Columns>
+                                <th>تاريخ</th>
+                                <th>التقرير</th>
+                                <th>مكالمة ايجابية</th>
+                                <th>يفكر فى العرض</th>
+                                <th>غير متجاوب</th>
+                                <th>اتصال للاحقا</th>
+                                <th>سياتى الى الشركة</th>
+                                <th>اتصال هاتفى</th>
+                                <th>واتس اب</th>
+                            </Columns>
+                            <Rows>
+                                <td>@data.Date.Value.ToDate()</td>
+                                <td>@data.Comment</td>
+                                <td>
+                                    @if (data.IsOkyDone)
+                                    {
+                                        <i class="bi bi-check-lg text-sucess"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-lg text-danger"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (data.Think)
+                                    {
+                                        <i class="bi bi-check-lg text-sucess"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-lg text-danger"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (data.DoNotAgree)
+                                    {
+                                        <i class="bi bi-check-lg text-sucess"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-lg text-danger"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (data.BackcallHim)
+                                    {
+                                        <i class="bi bi-check-lg text-sucess"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-lg text-danger"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (data.HeIsCome)
+                                    {
+                                        <i class="bi bi-check-lg text-sucess"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-lg text-danger"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (data.Telephone)
+                                    {
+                                        <i class="bi bi-check-lg text-sucess"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-lg text-danger"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (data.WhatsApp)
+                                    {
+                                        <i class="bi bi-check-lg text-sucess"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-lg text-danger"></i>
+                                    }
+                                </td>
+                            </Rows>
+                        </ShowTable>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger" role="alert">
+                             لا توجد تقارير سابقة لهذا العميل
+                        </div>
+                    }
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" @onclick="Donotshow" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter]
+    public Report? Report { get; set; } = new Report();
+
+    [Parameter]
+    public EventCallback Done { get; set; }
+
+    [Parameter]
+    public IUntiWork? DB { get; set; }
+
+    private bool showOdreport = false;
+
+    private IEnumerable<Report>? OldReports = null;
+
+    async Task isdone()
+    {
+        Report.Date = DateOnly.FromDateTime(DateTime.Now);
+        Report.DoneReport = true;
+        await DB.SaveChangeAsync();
+        Report = null;
+        showOdreport = false;
+        Thread.Sleep(1000);
+        await Done.InvokeAsync();
+        
+
+    }
+
+    async Task getold(int id)
+    {
+        showOdreport = true;
+        OldReports = await db.Reports.GetAsyncNoTracking(x => x.idCustomer == id && x.DoneReport);
+
+    }
+
+    void Donotshow()
+    {
+        showOdreport = false;
+    }
+
+}

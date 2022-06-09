@@ -1,0 +1,156 @@
+﻿@page "/addproject"
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject IToastService toast
+
+<div class="container rightdv">
+    <HeadPage NameArbic="مشروع بناء" NameEnglish="Add project"></HeadPage>
+   
+    <button type="button" class="btn btn-primary mb-4 mt-2" data-toggle="collapse" data-target="#addprojects" aria-expanded="false" aria-controls="addprojects">اضافة مشروع جديد</button>
+    <div class="collapse" id="addprojects">
+        <div class="card card-body">
+      <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="project" OnValidSubmit="Addprojectdb">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <div class="form-group text-right">
+                    <label>اسم المشروع</label>
+                    <InputText class="form-control" @bind-Value="project.ProjectName"></InputText>
+                </div>
+                <div class="form-group text-right">
+                    <label>معلومات المشروع</label>
+                    <InputTextArea class="form-control" @bind-Value="project.ProjectInfo"></InputTextArea>
+                </div>
+                 <div class="form-group text-right">
+                    <label>رقم الترخيص</label>
+                    <InputText class="form-control" @bind-Value="project.License"></InputText>
+                </div>
+                <div class="form-group text-right">
+                    <label>عدد الادوار</label>
+                    <InputNumber class="form-control" @bind-Value="project.CountFloor"></InputNumber>
+                </div>
+                <div class="form-group text-right">
+                    <label>مساحة الارض بالمتر</label>
+                    <InputNumber class="form-control" @bind-Value="project.TotalSapce"></InputNumber>
+                </div>
+                <div class="form-group text-right">
+                    <label>اجمالى سعر الشراء</label>
+                    <InputNumber class="form-control" @bind-Value="project.TotalPrice"></InputNumber>
+                     <span>(@project.TotalPrice.ConvertNumberToText())</span>
+                </div>
+                <div class="custom-file text-right">
+                    <InputFile OnChange="GetPhotos" multiple  class="custom-file-input"></InputFile>
+                    <label class="custom-file-label">Images</label>
+                </div>
+                <div class="form-group text-right mt-4">
+                    <button type="submit" class="btn btn-primary w-75">اضافة</button>
+                </div>
+            </EditForm>
+        </div>
+        <div class="col-md-6">
+            @if (Images.Count > 0)
+            {
+                foreach (var photo in Images)
+                {
+                    <img src="@photo.Image.ShowImage()" class="img-fluid m-2" style="width:100px" />
+                }
+            }
+        </div>
+    </div>
+        </div>
+    </div>
+    <hr />
+    @if(_Project != null)
+    {
+        <ShowTable itemtype="Project" Class="table-light" Items="_Project" Context="p" TheadClass="thead-dark">
+            <Columns>
+                <th>المشروع</th>
+                <th>عدد الوحدات</th>
+                <th>عدد الوحدات المباعة</th>
+                <th>عدد الوحدات الغير مباعة</th>
+                <th>اجمالى المصروفات</th>
+                <th>Control</th>
+                
+            </Columns>
+            <Rows>
+                <td>
+                    <h5>@p.ProjectName</h5>
+                    <p>@p.ProjectInfo</p>
+                    <p>@p.License</p>
+                </td>
+                <td>@p.CountUnit</td>
+                <td>@p.CountSaleUnit</td>
+                <td>@p.CountUnitNotSale</td>
+                <td>
+                    <span>@p.TotalCostPayment.ToMoney()</span>
+                    <p>(@p.TotalCostPayment.ConvertNumberToText())</p>
+                </td>
+                <td>
+                    <a class="btn btn-info" title="تسجيل وحدات المشروع" href="/addunintproject/@p.Id"><i class="bi bi-building"></i></a>
+                    <a class="btn btn-info ml-2" title="تكاليف المشروع" href="/consttheproject/@p.Id"><i class="bi bi-list-check"></i></a>
+                </td>
+            </Rows>
+        </ShowTable>
+    }
+</div>
+
+
+
+
+@code {
+
+    [Inject]
+    public NavigationManager? nav { get; set; }
+
+    IEnumerable<Project>? _Project = null;
+    Project? project = new Project();
+    List<ProjectImage> Images = new List<ProjectImage>();
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        if (!log.ISAdmin)
+        {
+            nav.NavigateTo("");
+        }
+        await GetAllProject();
+    }
+
+ 
+
+    private async Task GetAllProject()
+    {
+        _Project = await db.Projects.Include(m => m.ImageProject)
+                         .Include(n => n.UnitProjects).ThenInclude(d=>d.ReservationSale)
+                         .Include(c => c.BuildingCosts).ThenInclude(m=>m.Material)
+                         .Include(c => c.BuildingCosts).ThenInclude(m=>m.Maker)
+                         .AsNoTracking().ToListAsync();
+    }
+
+    async Task GetPhotos(InputFileChangeEventArgs e)
+    {
+        if (e.FileCount > 0)
+        {
+            foreach (var photo in e.GetMultipleFiles())
+            {
+                if (Path.GetExtension(photo.Name) == ".jpg" || Path.GetExtension(photo.Name) == ".png")
+                {
+                    var stream = new MemoryStream();
+                    await photo.OpenReadStream(photo.Size).CopyToAsync(stream);
+                    Images.Add(new ProjectImage { Image = stream.ToArray() });
+                    StateHasChanged();
+                }
+            }
+
+        }
+    }
+
+    async Task Addprojectdb()
+    {
+        project.ImageProject = Images;
+        await db.Projects.AddAsync(project);
+        project = new Project();
+        await GetAllProject();
+        toast.ShowSuccess("تم اضافة المشروع بنجاح");
+    }
+
+}

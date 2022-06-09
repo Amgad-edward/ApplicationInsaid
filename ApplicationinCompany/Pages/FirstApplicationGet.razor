@@ -1,0 +1,273 @@
+﻿@page "/firstappget"
+@inject IUntiWork db
+@inject ISessionStorageService session
+
+<div class="container rightdv">
+    <div class="row">
+        <div class="col-md-7">
+            <div class="form-group text-right">
+                <label>اختــــــــــــــر </label>
+                <select @bind="youDo" class="form-control">
+                    @foreach (YouDoApp item in Enum.GetValues(typeof(YouDoApp)))
+                    {
+                        <option value="@item">@item.ShowDiscruotionEnum()</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (youDo == YouDoApp.IfFirst)
+{
+    <div class="container rightdv">
+
+        <HeadPage NameArbic="اضف معلومات وبيانات الشركة" NameEnglish="Add Company Information"></HeadPage>
+
+        <div class="row">
+            @if (AddingCampnay)
+            {
+                <div class="col-md-7 animate__animated @(Addinguser ? "animate__fadeOut" : "animate__fadeIn")">
+                    <h3>اضافة بيانات الشركة</h3>
+                    <EditForm Model="addcompany">
+                        <div class="form-group text-right">
+                            <label>اسم الشركة بالعربية</label>
+                            <InputText @bind-Value="addcompany.NameCompany" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>اسم الشركة بالانجليزية</label>
+                            <InputText @bind-Value="addcompany.NameCompanyEng" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>تخصص النشاط</label>
+                            <InputText @bind-Value="addcompany.TitleActivity" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>اسم صاحب او مدير الشركة </label>
+                            <InputText @bind-Value="addcompany.Maneger" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>تاريخ ميلاد صاحب او مدير الشركة</label>
+                            <InputDate @bind-Value="addemplyee.DateBirth" class="form-control"></InputDate>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>رقم السجل التجارى</label>
+                            <InputText @bind-Value="addcompany.NumberCommercialRecord" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group text-right">
+                            <label class="text-danger">الرقم الضريبى</label>
+                            <InputText @bind-Value="addcompany.NumberTax" class="form-control"></InputText>
+                            <span class="text-black-50">هام لعمل اجراء الفاتورة الالكترونية</span>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>اضافة معلومات</label>
+                            <InputTextArea @bind-Value="addcompany.Information" class="form-control"></InputTextArea>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>ارقام الهاتف</label>
+                            <InputTextArea @bind-Value="addcompany.Phones" class="form-control"></InputTextArea>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>العنوان</label>
+                            <InputTextArea @bind-Value="addcompany.Address" class="form-control"></InputTextArea>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>موقع الشركة على جوجل</label>
+                            <InputText @bind-Value="addcompany.Locations" class="form-control"></InputText>
+                        </div>
+                        <div class="custom-file text-left">
+                            <InputFile OnChange="Getlogo" class="custom-file-input"></InputFile>
+                            <label class="custom-file-label">@filename</label>
+                        </div>
+                        <div class="card mt-3">
+                            <div class="card-body text-right">
+                                <h3>معلومات سرية خاصة بالفواتير الالكترونية</h3>
+                                <div class="form-group text-right">
+                                    <label class="text-danger">كود الشركة فى منظومة الفاتروة</label>
+                                    <InputText @bind-Value="addcompany.IDCompanyApi" class="form-control"></InputText>
+                                    <span class="text-black-50">هام لعمل اجراء الفاتورة الالكترونية</span>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label class="text-danger">كود الاول السرى الشركة</label>
+                                    <InputText @bind-Value="addcompany.Security1" class="form-control"></InputText>
+                                    <span class="text-black-50">هام لعمل اجراء الفاتورة الالكترونية</span>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label class="text-danger">كود الثانى السرى الشركة</label>
+                                    <InputText @bind-Value="addcompany.Security2" class="form-control"></InputText>
+                                    <span class="text-black-50">هام لعمل اجراء الفاتورة الالكترونية</span>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>ApiToken</label>
+                                    <InputText @bind-Value="addcompany.ApiToken" class="form-control"></InputText>
+                                </div>
+                            </div>
+                        </div>
+                    </EditForm>
+                    <div class="form-group text-right mt-3">
+                        <button class="btn btn-primary w-50" @onclick="Addcompanydb">اضافة الشركة</button>
+                    </div>
+                </div>
+                <div style="margin-left:500px;" class="col-md-4 text-left position-fixed animate__animated @(Addinguser ? "animate__fadeOut" : "animate__fadeIn")">
+                    <h5>Logo</h5>
+                    <img src="@addcompany.Logo.ShowImage()" class="img-fluid w-25" />
+                </div>
+            }
+            @if (Addinguser)
+            {
+                <div class="alert alert-success text-right" role="alert">
+                    تمت اضافتك كمدير للشركة برجاء ادخال اسم مستخدم وكلمة سر قوية للاستخدم الابليكيشن
+                </div>
+                <div class="col-md-8">
+                    <div class="form-group text-right">
+                        <label>اسم المستخدم</label>
+                        <input type="text" @bind-value="@AddAdmin.userName" class="form-control" placeholder="UserName" />
+                    </div>
+                    <div class="form-group text-right">
+                        <label>كلمة السر</label>
+                        <input type="password" @bind-value="@AddAdmin.Password" class="form-control" placeholder="Password" />
+                        @if (AddAdmin.Password != null && AddAdmin.Password.Length > 0 && AddAdmin.Password.Length < 6)
+                        {
+                            <span class="text-danger">كلمة السر يجب ان لا تقل عن ستة حروف</span>
+                        }
+                    </div>
+                    <div class="form-group text-right">
+                        <label>اعد كتابة لكمة السر</label>
+                        <input type="password" @bind-value="@AddAdmin.Re_Password" class="form-control" placeholder="Password" />
+                         @if( AddAdmin.Password != null && AddAdmin.Re_Password != null && AddAdmin.Password.Length > 0 && AddAdmin.Re_Password.Length > 0 && AddAdmin.Password == AddAdmin.Re_Password)
+                        {
+                            <span class="text-success">كلمة السر مطابقة</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">كلمة السر غير مطابقة</span>
+                        }
+                    </div>
+                    <div class="form-group text-right">
+                        <button class="btn btn-primary" @onclick="AddAdmindb">اضافة</button>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+}
+else if (youDo == YouDoApp.Islast)
+{
+    <Backup eventCallback="GOTonav" YesdownData="false"></Backup>
+}
+
+
+
+
+
+@code {
+
+    [Inject]
+    public NavigationManager? nav { get; set; }
+
+    [Inject]
+    public IToastService toast { get; set; }
+
+    Company? addcompany = new Company();
+    Emplyee? addemplyee = new Emplyee();
+    LogAdmins? AddAdmin = new LogAdmins();
+
+    YouDoApp youDo;
+    string? filename = "";
+
+    bool AddingCampnay = true;
+    bool Addinguser = false;
+
+    async void GOTonav()
+    {
+        await session.RemoveItemAsync("loguser");
+        nav.NavigateTo("");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (db.Companys.Any())
+        {
+            nav.NavigateTo("/");
+        }
+       
+    }
+
+    async Task AddAdmindb()
+    {
+        if (AddAdmin.Password.Length < 6)
+        {
+            toast.ShowError("كلمة السر اقل من ستة احرف");
+        }
+        else if (AddAdmin.Password != AddAdmin.Re_Password)
+        {
+            toast.ShowInfo("كلمة السر غير مطابقة برجاء اعادة ادخال كلمة السر");
+        }
+        else if (string.IsNullOrEmpty(AddAdmin.userName))
+        {
+            toast.ShowError("ادخل اسم السمتخدم");
+        }
+        else
+        {
+            AddAdmin.ISAdmin = true;
+            await db.LogAdmins.AddAsync(AddAdmin);
+            await session.RemoveItemAsync("loguser");
+            toast.ShowSuccess("Done Add User");
+            nav.NavigateTo("");
+        }
+    }
+
+    async Task Getlogo(InputFileChangeEventArgs e)
+    {
+
+        if (e.FileCount > 0)
+        {
+            filename = e.File.Name;
+            if (e.File.Name.IsExtiotionImage())
+            {
+                var stream = new MemoryStream();
+                await e.File.OpenReadStream(e.File.Size).CopyToAsync(stream);
+                addcompany.Logo = stream.ToArray();
+            }
+            else
+                toast.ShowError("الملف المدخل غير صحيح يجب ان يكون ملف الصورة من امتدادJPG OR PNG");
+        }
+    }
+
+    async Task Addcompanydb()
+    {
+        if (string.IsNullOrEmpty(addcompany.NameCompany))
+            toast.ShowError("ادخل اسم الشركة باللغة العربية");
+
+        else if (string.IsNullOrEmpty(addcompany.NameCompanyEng))
+            toast.ShowError("ادخل اسم الشركة باللغة الانجليزية");
+
+        else if (string.IsNullOrEmpty(addcompany.Maneger))
+            toast.ShowError("ادخل اسم  مدير الشركة");
+
+        else if (string.IsNullOrEmpty(addcompany.TitleActivity))
+            toast.ShowError("ادخل نشاط الشركة");
+        else
+        {
+            addemplyee.Name = addcompany.Maneger;
+            addemplyee.EndTimeWork = TimeOnly.MinValue;
+            addemplyee.StartTimeWork = TimeOnly.MinValue;
+            addemplyee.StartWork = DateOnly.FromDateTime(DateTime.Now);
+            addemplyee.TheJop = Jop.Maneger;
+            addemplyee.TitleJop = "مدير الشركة";
+            addemplyee.type = TypeSalery.Persant;
+            addemplyee.GideID = Guid.NewGuid().ToString();
+            await db.Companys.AddAsync(addcompany);
+            await db.Emplyees.AddAsync(addemplyee);
+            addcompany = new Company();
+            AddAdmin.IdEmplyee = addemplyee.Id;
+            toast.ShowSuccess("تمت اضافة الشركة");
+            AddingCampnay = false;
+            Addinguser = true;
+        }
+
+    }
+
+
+}

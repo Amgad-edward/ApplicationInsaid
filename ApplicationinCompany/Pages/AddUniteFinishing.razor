@@ -1,0 +1,742 @@
+﻿@page "/addunitfinish"
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject IToastService toast
+
+<div class="container rightdv">
+    <HeadPage NameArbic="واحدات الشتطيب" NameEnglish="Units"></HeadPage>
+    <button class="btn btn-primary mb-3" type="button" data-toggle="collapse" data-target="#addnewunit" aria-expanded="false" aria-controls="addnewunit">
+        اضافة وحدة للتشطيب
+    </button>
+    <div class="collapse multi-collapse" id="addnewunit">
+        <div class="card">
+            <div class="card-body text-right">
+                <h3 class="text-info">اضافة وحدة تشطيب</h3>
+                <EditForm Model="finishes">
+                    <div class="row">
+                        <div class="col-md-7">
+                            <div class="form-group text-right">
+                                <label>اختر نوع التسجيل</label>
+                                <InputSelect @bind-Value="unitIsfrom" class="form-control">
+                                    @foreach (UnitIs item in Enum.GetValues(typeof(UnitIs)))
+                                    {
+                                        <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                    </div>
+                    @if (unitIsfrom == UnitIs.UnitResertvation)
+                    {
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="form-group text-right">
+                                    <label>ابحث عن الوحدة باسم المالك او المشروع</label>
+                                    <AutoCompleteUnitReseravtion EventGetUnit="GetTheunite"></AutoCompleteUnitReseravtion>
+                                </div>
+                            </div>
+                        </div>
+                        if (finishes.UnitResertvation != null)
+                        {
+                            <div class="row mt-3">
+                                <div class="col-md-7 text-right">
+                                    <h6>@finishes.UnitResertvation.NameUint</h6>
+                                </div>
+                                <div class="col-md-4 text-right">
+                                    <h6>المساحة : @finishes.SapceMetar متر</h6>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6 text-right">
+                                    <div class="form-group text-right">
+                                        <label>اجمالى مبلغ المتفق علية</label>
+                                        <InputNumber @bind-Value="finishes.TotalPriceBuy" class="form-control"></InputNumber>
+                                        <span class="text-black-50">@finishes.TotalPriceBuy.ConvertNumberToText()</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    }
+                    else if (unitIsfrom == UnitIs.IsNewUnit)
+                    {
+                        <div class="row">
+                            <div class="col-md-7">
+                                <label>اكتب اسم العميل المسجل</label>
+                                <AutoCompeletCustomers GetEventCallback="GetCustomer"></AutoCompeletCustomers>
+                            </div>
+                        </div>
+                        if (finishes.IdCustomer > 0)
+                        {
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group text-right">
+                                        <label>المساحة</label>
+                                        <InputNumber @bind-Value="finishes.SapceMetar" class="form-control"></InputNumber>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="form-group text-right">
+                                        <label>اجمالى المبلغ المتفق علية</label>
+                                        <InputNumber @bind-Value="finishes.TotalPriceBuy" class="form-control"></InputNumber>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group text-right">
+                                        <label>اضافة معلومات</label>
+                                        <InputTextArea @bind-Value="finishes.Information" class="form-control"></InputTextArea>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    }
+                    <div class="row">
+                        <div class="col-md-7">
+                            <div class="form-group text-right">
+                                <label>تم من خلال</label>
+                                <InputSelect @bind-Value="addby" class="form-control">
+                                    @foreach (AddingBy item in Enum.GetValues(typeof(AddingBy)))
+                                    {
+                                        <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                    </div>
+                    @if (addby == AddingBy.Emlpyee)
+                    {
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="form-group text-right">
+                                    <label>اختر الموظف</label>
+                                    <AutoCompeletEmplyee Callback="getemplyee"></AutoCompeletEmplyee>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (addby == AddingBy.Company)
+                    {
+                        <div class="row">
+                            <div class="col-md-7">
+                                <div class="form-group text-right">
+                                    <label>اختر الشركة او النشاط</label>
+                                    <AutoCompeletCompanys eventCallback="getcompany"></AutoCompeletCompanys>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="row mb-3">
+                        @if (unitIsfrom == UnitIs.IsNewUnit)
+                        {
+                            <div class="col-md-4">
+                                <div class="form-group text-right">
+                                    <label>تصنيف الوحدة</label>
+                                    <InputSelect @bind-Value="finishes.Idcategory" class="form-control">
+                                        <option value="0">-----اختر التصنيق-----</option>
+                                        @if (_categories != null)
+                                        {
+                                        @foreach (var category in _categories)
+                                            {
+                                            <option value="@category.Id">@category.CategoryName</option>
+                                            }
+                                        }
+                                        else
+                                        {
+                                        <option value="0">-----لا توجد تصنيفات مضافة-----</option>
+                                        }
+                                </InputSelect>
+                            </div>
+                        </div>
+
+                        }
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label>تــاريخ</label>
+                                <InputDate @bind-Value="finishes.date" class="form-control"></InputDate>
+                            </div>
+                        </div>
+                    </div>
+
+                </EditForm>
+                <div class="mt-2 mb-3">
+                    <button class="btn btn-primary " @onclick="Addunitfinishdb">اضــافة</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr />
+    @if (finishesUnits != null)
+    {
+        <div style="margin-bottom:100px">
+            <RadzenGrid AllowFiltering="true" ColumnWidth="200px" TItem="FinishesUnit" Data="@finishesUnits"
+                    AllowSorting="true" PageSize="10" AllowPaging="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                <Columns>
+                    <RadzenGridColumn TItem="FinishesUnit" Title="الوحدة">
+                        <Template>
+                            <p>@context.Customer.NameCustomer</p>
+                            <div>
+                                @foreach (var item in context.Titel.Split('-'))
+                                {
+                                    <p class="text-black-50">@item</p>
+                                }
+                            </div>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="FinishesUnit" Title="المبلغ">
+                        <Template>
+                            @if (context.TotalPriceBuy > 0)
+                            {
+                                <h6>@context.TotalPriceBuy.ToMoney()</h6>
+                                <p class="text-black-50">(@context.TotalPriceBuy.ConvertNumberToText())</p>
+                            }
+                            else
+                            {
+                                <h6>لم يتم تحديد حتى الان</h6>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="FinishesUnit" Title="التكلفة">
+                        <Template>
+                            @if (context.TotalCostPayment > 0)
+                            {
+                                <h6>التكلفة حتى الان : @context.TotalCostPayment.ToMoney()</h6>
+
+                            }
+                            else
+                            {
+                                <h6>لم يتم تسجيل تكلفة حتى الان</h6>
+                            }
+                            @if (context.TotalCostruct > 0)
+                            {
+                                <hr />
+                                <h6 class="text-info">هناك مقايسة مبدائية : @context.TotalCostruct.ToMoney()</h6>
+                            }
+
+                        </Template>
+                    </RadzenGridColumn>
+
+                    <RadzenGridColumn TItem="FinishesUnit" Context="data" Title="#####">
+                        <Template>
+                            <Button T_type="FinishesUnit" ModalID="editmalde" eventBack="GetFinishEdit" Class="btn-info" TheValue="data">
+                                <Render>
+                                    <i class="bi bi-pencil-square"></i>
+                                </Render>
+                            </Button>
+                            <Button T_type="FinishesUnit" ModalID="deletemadel" eventBack="GetFinishunit" Class="btn-danger" TheValue="data">
+                                <Render>
+                                    <i class="bi bi-trash"></i>
+                                </Render>
+                            </Button>
+                            <a class="btn btn-outline-primary" href="/costdetalfinish/@data.Id">
+                                <i class="bi bi-list-check"></i>
+                            </a>
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+    }
+</div>
+
+<!-- Modal Delete -->
+<div class="modal fade" id="deletemadel" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+                <button type="button" class="close" @onclick="NotGetdelete" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (FinshDelete != null)
+            {
+                <div class="modal-body">
+                    <span class="">هل تريد حذف اتفاق تشطيب الوحدة للعميل </span> <span class="text-secondary">@FinshDelete.Customer.NameCustomer</span>??
+
+                    @if (FinshDelete.FinishCosts.Any())
+                    {
+                        <h6 class="text-danger">احذر هناك حسابات مضافة او مقايسات لهذة الوحدة وسيتم حذفها</h6>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="NotGetdelete" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="Delete" class="btn btn-danger">Yes</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Edit -->
+<div class="modal fade" id="editmalde" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit</h5>
+                <button type="button" class="close" @onclick="NotGet" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (FinshEditorDelete is not null)
+            {
+                <div class="modal-body rightdv">
+                    <div class="row">
+                        <div class="col-md-12 text-right">
+                            <EditForm Model="FinshEditorDelete">
+                                @if(FinshEditorDelete.Customer is not null)
+                                {
+                                   <h6>اتفاق لصالح العميل : @FinshEditorDelete.Customer.NameCustomer</h6>
+                                }
+                                @if (FinshEditorDelete.UnitResertvation != null)
+                                {
+
+                                    <div class="row mt-3">
+                                        <div class="col-md-6 text-right">
+                                            <h6>@FinshEditorDelete.UnitResertvation.NameUint</h6>
+                                        </div>
+                                        <div class="col-md-6 text-right">
+                                            <h6>المساحة : @finishes.SapceMetar متر</h6>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-10 text-right">
+                                            <div class="form-group text-right">
+                                                <label>اجمالى مبلغ المتفق علية</label>
+                                                <InputNumber @bind-Value="FinshEditorDelete.TotalPriceBuy" class="form-control"></InputNumber>
+                                                <span class="text-black-50">@FinshEditorDelete.TotalPriceBuy.ConvertNumberToText()</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="row">
+                                        <div class="col-md-10">
+                                            <label>تتغير اسم العميل </label>
+                                            <AutoCompeletCustomers GetEventCallback="GetCustomerEdit"></AutoCompeletCustomers>
+                                        </div>
+                                    </div>
+                                    if (FinshEditorDelete.IdCustomer > 0)
+                                    {
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="form-group text-right">
+                                                    <label>المساحة</label>
+                                                    <InputNumber @bind-Value="FinshEditorDelete.SapceMetar" class="form-control"></InputNumber>
+                                                    <span>(@FinshEditorDelete.SapceMetar.ConvertNumberToText() متر مربع)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-10">
+                                                <div class="form-group text-right">
+                                                    <label>اجمالى المبلغ المتفق علية</label>
+                                                    <InputNumber @bind-Value="FinshEditorDelete.TotalPriceBuy" class="form-control"></InputNumber>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-10">
+                                                <div class="form-group text-right">
+                                                    <label>اضافة معلومات</label>
+                                                    <InputTextArea @bind-Value="FinshEditorDelete.Information" class="form-control"></InputTextArea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                }
+                                <div class="row">
+                                    <div class="col-md-7">
+                                        <div class="form-group text-right">
+                                            <label>تم من خلال</label>
+                                            <InputSelect @bind-Value="Editaddby" class="form-control">
+                                                @foreach (AddingBy item in Enum.GetValues(typeof(AddingBy)))
+                                                {
+                                                <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                                }
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (Editaddby == AddingBy.Emlpyee)
+                                {
+                                    <div class="row">
+                                        <div class="col-md-7">
+                                            <div class="form-group text-right">
+                                                <label>اختر الموظف</label>
+                                                <AutoCompeletEmplyee Callback="getemplyeeEdit"></AutoCompeletEmplyee>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else if (Editaddby == AddingBy.Company)
+                                {
+                                    <div class="row">
+                                        <div class="col-md-7">
+                                            <div class="form-group text-right">
+                                                <label>اختر الشركة او النشاط</label>
+                                                <AutoCompeletCompanys eventCallback="getcompanyEdit"></AutoCompeletCompanys>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="row mb-3">
+                                    @if (FinshEditorDelete.UnitResertvation == null)
+                                    {
+                                        <div class="col-md-4">
+                                            <div class="form-group text-right">
+                                                <label>تصنيف الوحدة</label>
+                                                <InputSelect @bind-Value="FinshEditorDelete.Idcategory" class="form-control">
+                                                    <option value="0">-----اختر التصنيق-----</option>
+                                                    @if (_categories != null)
+                                                    {
+                                                @foreach (var category in _categories)
+                                                        {
+                                                    <option value="@category.Id">@category.CategoryName</option>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                <option value="0">-----لا توجد تصنيفات مضافة-----</option>
+                                                    }
+                                        </InputSelect>
+                                    </div>
+                                </div>
+
+                                    }
+                                    <div class="col-md-4">
+                                        <div class="form-group text-right">
+                                            <label>تــاريخ</label>
+                                            <InputDate @bind-Value="FinshEditorDelete.date" class="form-control"></InputDate>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </EditForm>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="NotGet" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="SaveEdit" class="btn btn-primary">Save changes</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Inject]
+    public NavigationManager? nav { get; set; }
+
+    FinishesUnit? finishes = new FinishesUnit();
+
+    IEnumerable<FinishesUnit>? finishesUnits = null;
+    ResertvationAndSale? AddUnite = null;
+    IEnumerable<Category>? _categories = null;
+    UnitIs unitIsfrom;
+    AddingBy addby;
+
+    AddingBy Editaddby;
+    FinishesUnit? FinshEditorDelete = null;
+    FinishesUnit? FinshDelete = null;
+
+    void GetFinishunit(FinishesUnit Unit)
+    {
+        FinshDelete = Unit;
+    }
+
+    void NotGet()
+    {
+        FinshEditorDelete = null;
+        Editaddby = AddingBy.None;
+    }
+
+    void NotGetdelete()
+    {
+        FinshDelete = null;
+    }
+
+    void GetFinishEdit(FinishesUnit Unit)
+    {
+        FinshEditorDelete = Unit;
+        if (Unit.IdEpmlyee is not null)
+            Editaddby = AddingBy.Emlpyee;
+        else if (Unit.IdCompanysGet is not null)
+            Editaddby = AddingBy.Company;
+    }
+
+
+    async Task Delete()
+    {
+        if (FinshDelete != null)
+        {
+            if (FinshDelete.FinishCosts.Any())
+            {
+                if (FinshDelete.FinishCosts.Any(x => x.ManeyPaymentCosts.Any()))
+                {
+                    var Payment = FinshDelete.FinishCosts.SelectMany(s => s.ManeyPaymentCosts);
+                    await db.ThePaymentCosts.DeleteAsync(Payment);
+                }
+                await db.FinishCosts.DeleteAsync(FinshDelete.FinishCosts);
+            }
+            await db.FinishesUnits.DeleteAsync(FinshDelete);
+            FinshDelete = null;
+            await GetUnits();
+            toast.ShowSuccess("Done Delete");
+        }
+    }
+
+    async Task SaveEdit()
+    {
+        if (FinshEditorDelete.IdCustomer <= 0)
+        {
+            toast.ShowError("يجب اختيار اسم العميل");
+        }
+        else if(FinshEditorDelete.TotalPriceBuy < 0)
+        {
+            toast.ShowError("لا يمكن ادخال الثمن المتفق علية بالسالب");
+        }
+        else if(FinshEditorDelete.Idcategory <= 0)
+        {
+            toast.ShowError("برجاء اختيرا التصنيف");
+        }
+        else
+        {
+           
+            await db.FinishesUnits.UpdateAsync(FinshEditorDelete);
+            FinshEditorDelete = null;
+            toast.ShowSuccess("Done Update");
+            await GetUnits();
+        }
+
+    }
+
+    void GetTheunite(ResertvationAndSale unit)
+    {
+        if (unit.ID > 0)
+        {
+            finishes.UnitResertvation = unit;
+            finishes.IdUintResertvation = unit.ID;
+            finishes.Customer = unit.ToCustomer;
+            finishes.IdCustomer = unit.IdCustomer;
+            finishes.SapceMetar = (float)unit.Unit.SpaceMater;
+            finishes.Idcategory = unit.Unit.Idcategory;
+            AddUnite = unit;
+        }
+        else
+        {
+            finishes.UnitResertvation = null;
+            finishes.IdUintResertvation = null;
+            finishes.Customer = null;
+            finishes.IdCustomer = 0;
+            finishes.SapceMetar = 0;
+            finishes.Idcategory = 0;
+            AddUnite = null;
+        }
+    }
+    void GetUnitEditowner(ResertvationAndSale unit)
+    {
+        if (unit.ID > 0)
+        {
+            FinshEditorDelete.UnitResertvation = unit;
+            FinshEditorDelete.IdUintResertvation = unit.ID;
+            FinshEditorDelete.Customer = unit.ToCustomer;
+            FinshEditorDelete.IdCustomer = unit.IdCustomer;
+            FinshEditorDelete.SapceMetar = (float)unit.Unit.SpaceMater;
+            FinshEditorDelete.Idcategory = unit.Unit.Idcategory;
+            AddUnite = unit;
+        }
+
+    }
+
+    void getemplyee(int id)
+    {
+        if (id > 0)
+        {
+            finishes.IdEpmlyee = id;
+        }
+        else
+        {
+            finishes.IdEpmlyee = null;
+        }
+    }
+    void getemplyeeEdit(int id)
+    {
+        if (id > 0)
+        {
+            FinshEditorDelete.IdEpmlyee = id;
+        }
+        else
+        {
+            FinshEditorDelete.IdEpmlyee = null;
+        }
+    }
+
+    void getcompanyEdit(int id)
+    {
+        if (id > 0)
+            FinshEditorDelete.IdCompanysGet = id;
+
+        else
+            FinshEditorDelete.IdCompanysGet = null;
+    }
+
+    void getcompany(int id)
+    {
+        if (id > 0)
+            finishes.IdCompanysGet = id;
+
+        else
+            finishes.IdCompanysGet = null;
+    }
+
+    void GetCustomer(int id)
+    {
+        if (id > 0)
+        {
+            finishes.IdCustomer = id;
+        }
+        else
+        {
+            finishes.IdCustomer = 0;
+        }
+    }
+    void GetCustomerEdit(int id)
+    {
+        if (id > 0)
+        {
+            FinshEditorDelete.IdCustomer = id;
+        }
+
+    }
+
+    async Task Addunitfinishdb()
+    {
+        if (finishes.IdCustomer <= 0)
+        {
+            toast.ShowError("برجاء اختيار العميل");
+
+        }
+        else if (addby == AddingBy.Company && finishes.IdCompanysGet == null)
+        {
+            toast.ShowError("برجاء اختيار الشركة الوسيطة");
+
+        }
+        else if (addby == AddingBy.Emlpyee && finishes.IdEpmlyee == null)
+        {
+            toast.ShowError("برجاء اختيار الموظف");
+
+        }
+        else if(finishes.TotalPriceBuy < 0)
+        {
+              toast.ShowError("لا يمكن ادخال الثمن المتفق علية بالسالب");
+        }
+        else if (finishes.Idcategory <= 0)
+        {
+            toast.ShowError("برجاء اختيار التصنيف");
+        }
+        else
+        {
+            if (unitIsfrom == UnitIs.UnitResertvation)
+            {
+                if (finishes.IdUintResertvation == null)
+                {
+                    toast.ShowError("برجاء اختيار الوحدة");
+                }
+                else
+                {
+                    finishes.Guid = Guid.NewGuid().ToString();
+                    finishes.UnitResertvation = null;
+                    finishes.ByEmplyee = null;
+                    finishes.Customer = null;
+                    finishes.ByCompany = null;
+                    finishes.Category = null;
+                    finishes.TotalPriceBuy = finishes.TotalPriceBuy.ToRound();
+                    await db.FinishesUnits.AddAsync(finishes);
+                    AddUnite.IdFinishUint = finishes.Id;
+                    await db.ResertvationAndSales.UpdateAsync(AddUnite);
+                    await GetUnits();
+                    toast.ShowSuccess("Done");
+                    addby = AddingBy.None;
+                    unitIsfrom = UnitIs.None;
+                    finishes = new FinishesUnit();
+                }
+
+            }
+            else if (unitIsfrom == UnitIs.IsNewUnit)
+            {
+                if (finishes.SapceMetar <= 0)
+                {
+                    toast.ShowError("برجاء ادخل مساحة الوحدة");
+                }
+                else
+                {
+                    finishes.Guid = Guid.NewGuid().ToString();
+                    finishes.UnitResertvation = null;
+                    finishes.ByEmplyee = null;
+                    finishes.Customer = null;
+                    finishes.ByCompany = null;
+                    finishes.Category = null;
+                    finishes.TotalPriceBuy = finishes.TotalPriceBuy.ToRound();
+                    await db.FinishesUnits.AddAsync(finishes);
+                    await GetUnits();
+                    toast.ShowSuccess("Done");
+                    addby = AddingBy.None;
+                    unitIsfrom = UnitIs.None;
+                    finishes = new FinishesUnit();
+                }
+
+            }
+        }
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        if (!log.ISAdmin)
+        {
+            nav.NavigateTo("");
+        }
+
+        await GetUnits();
+    }
+
+    async Task GetUnits()
+    {
+        var Unitf = await db.FinishesUnits.Include(cat => cat.Category)
+                        .Include(c => c.Customer).Include(r => r.UnitResertvation)
+                        .ThenInclude(u => u.Unit).ThenInclude(c => c.Category)
+                        .Include(r => r.UnitResertvation).ThenInclude(u => u.Unit).ThenInclude(ca => ca.Category)
+                        .Include(r => r.UnitResertvation).ThenInclude(u => u.Unit).ThenInclude(p => p.Project)
+                        .Include(r => r.UnitResertvation).ThenInclude(u => u.Unit).ThenInclude(f => f.Floor)
+                        .Include(r => r.UnitResertvation).ThenInclude(u => u.ToCustomer)
+                        .Include(e => e.ByEmplyee).Include(com => com.ByCompany).Include(fu => fu.FinishCosts)
+                        .ThenInclude(pay => pay.ManeyPaymentCosts)
+                        .AsNoTracking().ToListAsync();
+        _categories = await db.Categories.GetAllAsycnNoTracking();
+        finishesUnits = Unitf.OrderByDescending(x => x.date);
+
+        // finishesUnits = await db.FinishesUnits.Include(cat => cat.Category)
+        //.Include(c => c.Customer).Include(r => r.UnitResertvation)
+        //.Include(e => e.ByEmplyee).Include(com => com.ByCompany)
+        //.Include(img => img.ImageDesignFinishes).Include(f => f.FinishCosts)
+        //.ThenInclude(m => m.Maker).Include(f => f.FinishCosts)
+        //.ThenInclude(mr => mr.Material).Include(f => f.FinishCosts)
+        //.ThenInclude(p => p.ManeyPaymentCosts).ToListAsync();
+    }
+
+
+}

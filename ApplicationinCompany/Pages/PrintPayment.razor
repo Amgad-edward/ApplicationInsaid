@@ -1,0 +1,141 @@
+﻿@page "/printunit/{id:int}/{By}"
+@inject IJSRuntime js
+
+
+<div class="container" style="margin-top: 100px">
+    <button class="btn btn-dark" @onclick="print">Print</button>
+    <a class="btn btn-outline-secondary ml-2" href="/paymentcustomers">Back</a>
+</div>
+
+<div id="dvprinter" class="container rightdv">
+    @if (paymentMoney != null)
+    {
+        <div>
+            <div class="row justify-content-between">
+                <div class="col-6 text-right">
+                    <h2>@Hex.Company.NameCompany</h2>
+                    <p>@Hex.Company.TitleActivity</p>
+                    <p><em>@Hex.Company.Maneger</em></p>
+                </div>
+                <div class="">
+                    <img src="@Hex.Company.Logo.ShowImage()"  style="width:75px; margin-right:610px ;margin-top:-150px;" />
+                </div>
+            </div>
+           <h2 class="text-center">ايصال نقدية سداد وحدة @paymentMoney.RevervationSale.Unit.Category.CategoryName</h2>
+            <div class="row">
+                <div class="col-8 text-right">
+                    <h4>تم استلام من السيد / @paymentMoney.RevervationSale.ToCustomer.NameCustomer</h4>
+                    <h4>مبلغ وقدرة : @paymentMoney.Money.ToMoney() (فقط @paymentMoney.Money.ConvertNumberToText() جنيها فقط لا غير)</h4>
+                    <h4>وذلك عن سداد @paymentMoney.Paymentis.ShowDiscruotionEnum() الى حساب الوحدة @paymentMoney.RevervationSale.Unit.UnitInformation</h4>
+                    <h4>ليصبح المتبقى : @paymentMoney.RevervationSale.TotalRemaining.ToMoney() - (فقط @paymentMoney.RevervationSale.TotalRemaining.ConvertNumberToText() جنيها)</h4>
+                    <h4 class="text-center">وهذا ايصال منا بهذا,,</h4>
+                    <p class="text-black-50">تاريخ : @paymentMoney.DatePayment.Todate()</p>
+                    <p>سدد عن طريق : @paymentMoney.CashPayment.ShowDiscruotionEnum() @(paymentMoney.CashPayment != CashPayment.Cash ? paymentMoney.SheekBank : "")</p>
+                    <p>ايصال رقم : @paymentMoney.NumberPaymentProcess</p>
+                </div>
+            </div>
+        </div>
+
+      <div>
+        <img src="@paymentMoney.NumberPaymentProcess.GetBarcodeImage()" style="width: 229px" />
+      </div>
+
+    }
+    else if(paymentFinish is not null)
+    {
+        <div>
+            <div class="row justify-content-between">
+                <div class="col-6 text-right">
+                    <h2>@Hex.Company.NameCompany</h2>
+                    <p>@Hex.Company.TitleActivity</p>
+                    <p><em>@Hex.Company.Maneger</em></p>
+                </div>
+                <div class="">
+                    <img src="@Hex.Company.Logo.ShowImage()"  style="width:75px; margin-right:610px ;margin-top:-150px;" />
+                </div>
+            </div>
+           <h2 class="text-center">ايصال نقدية سداد تشطيب وحدة @paymentFinish.FinishesUnit.Information</h2>
+            <div class="row">
+                <div class="col-8 text-right">
+                    <h4>تم استلام من السيد / @paymentFinish.FinishesUnit.Customer.NameCustomer</h4>
+                    <h4>مبلغ وقدرة : @paymentFinish.Money.ToMoney() (فقط @paymentFinish.Money.ConvertNumberToText() جنيها فقط لا غير)</h4>
+                    <h4>وذلك عن سداد @paymentFinish.Paymentis.ShowDiscruotionEnum() الى حساب الوحدة @paymentFinish.FinishesUnit.Information</h4>
+                    <h4>ليصبح المتبقى : @paymentFinish.FinishesUnit.TotalRemaining.ToMoney() - (فقط @paymentFinish.FinishesUnit.TotalRemaining.ConvertNumberToText() جنيها)</h4>
+                    <h4 class="text-center">وهذا ايصال منا بهذا,,</h4>
+                    <p class="text-black-50">تاريخ : @paymentFinish.DatePayment.Todate()</p>
+                    <p>سدد عن طريق : @paymentFinish.CashPayment.ShowDiscruotionEnum() @(paymentFinish.CashPayment != CashPayment.Cash ? paymentFinish.SheekBank : "")</p>
+                    <p>ايصال رقم : @paymentFinish.NumberPaymentProcess</p>
+                </div>
+            </div>
+        </div>
+       <div>
+        <img src="@paymentFinish.NumberPaymentProcess.GetBarcodeImage()" style="width: 229px" />
+      </div>
+        
+    }
+    <div style="margin-right:500px;text-align:center; margin-top:29px;margin-left:50px;width:99px;height:99px;border:1px solid black;border-radius:50%; ">
+        <h6 >خــتم الشركة</h6>
+    </div>
+    
+</div>
+
+
+
+
+@code {
+
+    [Inject]
+    public IUntiWork? db { get; set; }
+
+    [Parameter]
+    public int id { get; set; }
+
+    [Parameter]
+    public string? By { get; set; }
+
+    PaymentMoney? paymentMoney = null;
+
+    PaymentFinish? paymentFinish = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (By == "R")
+        {
+            paymentMoney = await db.PaymentMoneys.Include(reservarion => reservarion.RevervationSale).ThenInclude(c => c.ToCustomer)
+                                 .Include(r => r.RevervationSale).ThenInclude(u => u.Unit).ThenInclude(p => p.Project)
+                                 .Include(r => r.RevervationSale).ThenInclude(u => u.Unit).ThenInclude(p => p.Category)
+                                 .Include(r => r.RevervationSale).ThenInclude(u => u.Unit).ThenInclude(f => f.Floor)
+                                  .Include(r => r.RevervationSale).ThenInclude(payment => payment.PaymentMoney)
+                                  .FirstOrDefaultAsync(x => x.ID == id);
+
+        }
+        else if (By == "F")
+        {
+            paymentFinish = await db.PaymentFinishing.Include(f => f.FinishesUnit).ThenInclude(c => c.Customer)
+                                    .Include(f => f.FinishesUnit).ThenInclude(c => c.PaymentMoney)
+                                    .Include(f => f.FinishesUnit).ThenInclude(c => c.UnitResertvation)
+                                    .FirstOrDefaultAsync(x => x.ID == id);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender)
+        {
+           
+        }
+        else
+        {
+             await js.InvokeVoidAsync("printpayments");
+        }
+       
+    }
+
+     
+
+    async Task print()
+    {
+        await js.InvokeVoidAsync("printpayments");
+    }
+}
+

@@ -1,0 +1,39 @@
+﻿@inject IUntiWork db
+
+
+
+@if(_makers != null)
+{
+ <BlazoredTypeahead  @bind-Value="makerof" @onselectionchange="async ()=> await GetMaker.InvokeAsync(makerof)"  SearchMethod="Autocomplelet">
+      <SelectedTemplate>
+          @context.NameMaker
+      </SelectedTemplate>
+      <ResultTemplate>
+          @context.NameMaker &nbsp; <span class="text-black-50">@context.JopTitel </span>
+      </ResultTemplate>
+</BlazoredTypeahead>
+}
+else
+{
+    <p class="text-danger">لا توجد صناع مسجلين</p>
+}
+
+@code {
+
+    [Parameter]
+    public EventCallback<Maker?> GetMaker { get; set; }
+
+    Maker? makerof = new Maker();
+
+    IEnumerable<Maker> _makers = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _makers = await db.Makers.Include(w => w.Weight).AsNoTracking().ToListAsync();
+    }
+
+    async Task<IEnumerable<Maker>> Autocomplelet(string text)
+    {
+        return await Task.FromResult(_makers.Where(x => x.NameMaker.ToLower().Contains(text) || x.JopTitel.Contains(text)));
+    }
+}

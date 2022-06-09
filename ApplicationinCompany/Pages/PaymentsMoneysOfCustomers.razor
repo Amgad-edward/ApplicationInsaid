@@ -1,0 +1,782 @@
+﻿@page "/paymentcustomers"
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject NavigationManager nav
+@inject IToastService toast
+
+
+<div class="container rightdv">
+    <HeadPage NameArbic="سداد مبلغ مستحقة من العملاء" NameEnglish="Payment Customers"></HeadPage>
+    <div class="row justify-content-between">
+        <div class="col-md-5">
+            <div class="row">
+                <div class="col-md-9">
+                    <div class="form-group text-right">
+                        <label>بحث باسم العميل</label>
+                        <SearchCustomerPayments DB="db" eventCallback="getpay"></SearchCustomerPayments>
+                    </div>
+                </div>
+                <div class="col-md-3 mt-4">
+                    <button class="btn btn-dark" @onclick="Cloased">الغاء</button>
+                </div>
+            </div>
+            @if (!lodding)
+            {
+                @if (payments is not null)
+                {
+                    <div class="form-group text-right">
+                        <h4 class="text-danger">المتبقى : @payments.Ramaining</h4>
+                    </div>
+                    @if (payments.Payment != null)
+                    {
+                        <div class="form-group text-right">
+                            <h5 class="text-info">دفع : @payments.Payment.Paymentis.GetTextEnum()</h5>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>مبلــغ @(payments.Payment.Paymentis == PaymentIs.Installment ? "القسط" : "المدفوع")</label>
+                            @if (payments.Payment.Paymentis == PaymentIs.Installment && payments.Payment.Money > 0)
+                            {
+                                <input type="number" readonly @bind-value="payments.Payment.Money" class="form-control bg-light" />
+                            }
+                            else
+                            {
+                                <input type="number" @bind-value="payments.Payment.Money" class="form-control" />
+                            }
+                            <span class="text-black-50">(@payments.Payment.Money.ConvertNumberToText() جنيها)</span>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>تاريخ</label>
+                            <input type="date" @bind-value="payments.Payment.DatePayment" class="form-control" />
+                            <span class="text-black-50">@payments.Payment.DatePayment.Todate()</span>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>سداد</label>
+                            <select @bind="payments.Payment.CashPayment" class="form-control">
+                                @foreach (CashPayment item in Enum.GetValues(typeof(CashPayment)))
+                                {
+                                    <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                }
+                            </select>
+                        </div>
+                        @if (payments.Payment.CashPayment == CashPayment.Sheek || payments.Payment.CashPayment == CashPayment.Visa)
+                        {
+                            <div class="form-group text-right">
+                                <label>@(payments.Payment.CashPayment == CashPayment.Sheek ? "رقم الشيك والبنك" : "رقم عملية الفيزا")</label>
+                                <input type="text" @bind-value="payments.Payment.SheekBank" class="form-control" />
+                            </div>
+                        }
+
+                    }
+                    else if (payments.PaymentFinish != null)
+                    {
+                        <div class="form-group text-right">
+                            <h5 class="text-info">دفع : @payments.PaymentFinish.Paymentis.GetTextEnum()</h5>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>مبلــغ @(payments.PaymentFinish.Paymentis == PaymentIs.Installment ? "القسط" : "المدفوع")</label>
+                            @if (payments.PaymentFinish.Paymentis == PaymentIs.Installment && payments.PaymentFinish.Money > 0)
+                            {
+                                <input type="number" readonly @bind-value="payments.PaymentFinish.Money" class="form-control bg-light" />
+                            }
+                            else
+                            {
+                                <input type="number" @bind-value="payments.PaymentFinish.Money" class="form-control" />
+                            }
+                            <span class="text-black-50">@payments.PaymentFinish.Money.ConvertNumberToText() جنيها</span>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>تاريخ</label>
+                            <input type="date" @bind-value="payments.PaymentFinish.DatePayment" class="form-control" />
+                            <span class="text-black-50">@payments.PaymentFinish.DatePayment.Todate()</span>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>سداد</label>
+                            <select @bind="payments.PaymentFinish.CashPayment" class="form-control">
+                                @foreach (CashPayment item in Enum.GetValues(typeof(CashPayment)))
+                                {
+                                    <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                }
+                            </select>
+                        </div>
+                        @if (payments.PaymentFinish.CashPayment == CashPayment.Sheek || payments.PaymentFinish.CashPayment == CashPayment.Visa)
+                        {
+                            <div class="form-group text-right">
+                                <label>@(payments.PaymentFinish.CashPayment == CashPayment.Sheek ? "رقم الشيك والبنك" : "رقم عملية الفيزا")</label>
+                                <input type="text" @bind-value="payments.PaymentFinish.SheekBank" class="form-control" />
+                            </div>
+                        }
+                    }
+                    <div class="mb-3">
+                        <input type="checkbox" @bind-value="@print" class="custom-checkbox" />
+                        <label>طباعة الايصال</label>
+                    </div>
+                    <div class="form-group text-right mb-3">
+                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#ModelAowllod">تـــم الــدفع</button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            }
+
+        </div>
+        <div>
+            @if (payments != null)
+            {
+                @if (payments.Collections is not null)
+                {
+                    @if (payments.Collections.Resertvation != null)
+                    {
+                        <div class="text-right">
+                            <h4 class="text-info"> وحدة :@payments.Collections.Resertvation.Unit.UnitInformation</h4>
+                        </div>
+                        <ShowTable Class="mt-3" itemtype="PaymentMoney" TheadClass="thead-dark" Items="payments.Collections.Resertvation.PaymentMoney">
+                            <Columns>
+                                <th>تاريخ الدفع</th>
+                                <th>المبلغ</th>
+                                <th>طريقة السداد</th>
+                                <th>حالة مسدد / غير مسدد</th>
+                                @if (Admin)
+                                {
+                                    <th>Action</th>
+                                }
+                            </Columns>
+                            <Rows>
+                                <td>@context.DatePayment.Todate()</td>
+                                <td>
+                                    @context.Money.ToMoney()
+                                    <p>(@context.Money.ConvertNumberToText() جنيها)</p>
+                                </td>
+                                <td>
+                                    @context.CashPayment.ShowDiscruotionEnum()
+                                    @if (context.CashPayment == CashPayment.Sheek || context.CashPayment == CashPayment.Visa)
+                                    {
+                                        <p>@(context.CashPayment == CashPayment.Sheek ? "البنك ورقم الشيك" : "رقم عملية الدفع")</p>
+                                        <p>(@context.SheekBank)</p>
+                                    }
+                                </td>
+                                <td>
+                                    @if (context.DonePayment)
+                                    {
+                                        <i class="bi bi-check2-all text-success"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-lg text-danger"></i>
+                                    }
+                                </td>
+                                @if (Admin)
+                                {
+                                    <td>
+                                        <Button Class="btn-outline-light text-dark" ModalID="editModel" eventBack="getEdit" AddTitle="تعديل" T_type="PaymentMoney" TheValue="context">
+                                            <Render><i class="bi bi-pencil-square"></i></Render>
+                                        </Button>
+                                        <Button Class="btn-outline-danger" ModalID="DeleteBuildingunit" eventBack="getEdit" AddTitle="حذف هذا الحساب" T_type="PaymentMoney" TheValue="context">
+                                            <Render><i class="bi bi-trash"></i></Render>
+                                        </Button>
+                                    </td>
+                                }
+
+                            </Rows>
+                        </ShowTable>
+                    }
+                    else if (payments.Collections.FinishesUnit != null)
+                    {
+                        <div class="text-right">
+                            <h4 class="text-info"> وحدة :@payments.Collections.FinishesUnit.Information</h4>
+                        </div>
+                        <ShowTable Class="mt-3" itemtype="PaymentFinish" TheadClass="thead-dark" Items="payments.Collections.FinishesUnit.PaymentMoney">
+                            <Columns>
+                                <th>تاريخ الدفع</th>
+                                <th>المبلغ</th>
+                                <th>طريقة السداد</th>
+                                <th>حالة مسدد / غير مسدد</th>
+                                @if (Admin)
+                                {
+                                    <th>Action</th>
+                                }
+                            </Columns>
+                            <Rows>
+                                <td>@context.DatePayment.Todate()</td>
+                                <td>
+                                    @context.Money.ToMoney()
+                                    <p>(@context.Money.ConvertNumberToText() جنيها)</p>
+                                </td>
+                                <td>
+                                    @context.CashPayment.ShowDiscruotionEnum()
+                                    @if (context.CashPayment == CashPayment.Sheek || context.CashPayment == CashPayment.Visa)
+                                    {
+                                        <p>@(context.CashPayment == CashPayment.Sheek ? "البنك ورقم الشيك" : "رقم عملية الدفع")</p>
+                                        <p>(@context.SheekBank)</p>
+                                    }
+                                </td>
+                                <td>
+                                    @if (context.DonePayment)
+                                    {
+                                        <i class="bi bi-check2-all text-success"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-lg text-danger"></i>
+                                    }
+                                </td>
+                                @if (Admin)
+                                {
+                                    <td>
+                                        <Button Class="btn-outline-light text-dark" ModalID="editModelFinsh" eventBack="getEditFinishing" AddTitle="تعديل" T_type="PaymentFinish" TheValue="context">
+                                            <Render><i class="bi bi-pencil-square"></i></Render>
+                                        </Button>
+                                        <Button Class="btn-outline-danger" ModalID="Deletefinish" AddTitle="حذف هذا الحساب" T_type="PaymentFinish" eventBack="getEditFinishing" TheValue="context">
+                                            <Render>
+                                                <i class="bi bi-trash"></i>
+                                            </Render>
+                                        </Button>
+                                    </td>
+                                }
+
+                            </Rows>
+                        </ShowTable>
+                    }
+                }
+            }
+        </div>
+
+    </div>
+
+
+</div>
+
+<!-- Modal Done -->
+<div class="modal fade" id="ModelAowllod" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Add Payment</h5>
+                <button type="button" class="close" @onclick="CloseOrprint" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (payments != null)
+            {
+                @if (payments.Payment is not null)
+                {
+                    @if ((payments.Payment.CashPayment == CashPayment.Sheek || payments.Payment.CashPayment == CashPayment.Visa) && string.IsNullOrEmpty(payments.Payment.SheekBank))
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-danger">برجاء ادخال رقم @(payments.Payment.CashPayment == CashPayment.Sheek ? "البنك ورقم الشيك" : "رقم عملية الفيزا") </h4>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    }
+                    else if (payments.Payment.Money <= 0)
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-danger">برجاء ادخل المبلغ</h4>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    }
+                    else if (payments.Payment.Money > payments.MoneyRemaining)
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-danger">المبلغ المسدد اكبر من المبلغ المتبقى برجاء التعديل !!!</h4>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    }
+                    else if (payments.Payment.CashPayment == CashPayment.None)
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-danger">ادخل طريقة الدفع</h4>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-dark">
+                                    هل تريد سداد مبلغ
+                                    @payments.Payment.Money.ToMoney()<br />
+                                    (@payments.Payment.Money.ConvertNumberToText() جنيها)<br />
+                                    من حساب : @payments.Collections.Resertvation.ToCustomer.NameCustomer <br />
+                                    لحساب الوحدة : @payments.Collections.Resertvation.Unit.UnitInformation ??
+                                </h4>
+                            </div>
+                            <div class="modal-footer text-right">
+                                <button type="button" class="btn btn-secondary" @onclick="CloseOrprint" data-dismiss="modal">اغلاق</button>
+                                @if (!DonePay)
+                                {
+                                    <button type="button" class="btn btn-primary" @onclick="PaymentDone">نعم ســـدد</button>
+                                }
+
+                            </div>
+                        </div>
+                    }
+                }
+                else if (payments.PaymentFinish != null)
+                {
+                    @if ((payments.PaymentFinish.CashPayment == CashPayment.Sheek || payments.PaymentFinish.CashPayment == CashPayment.Visa) && string.IsNullOrEmpty(payments.PaymentFinish.SheekBank))
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-danger">برجاء ادخال رقم @(payments.PaymentFinish.CashPayment == CashPayment.Sheek ? "البنك ورقم الشيك" : "رقم عملية الفيزا") </h4>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    }
+                    else if (payments.PaymentFinish.Money <= 0)
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-danger">برجاء ادخل المبلغ</h4>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    }
+                    else if (payments.PaymentFinish.Money > payments.MoneyRemaining)
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-danger">المبلغ المسدد اكبر من المبلغ المتبقى برجاء التعديل !!!</h4>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    }
+                    else if (payments.PaymentFinish.CashPayment == CashPayment.None)
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-danger">ادخل طريقة الدفع</h4>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rightdv">
+                            <div class="modal-body text-right">
+                                <h4 class="text-dark">
+                                    هل تريد سداد مبلغ
+                                    @payments.PaymentFinish.Money.ToMoney()<br />
+                                    (@payments.PaymentFinish.Money.ConvertNumberToText() جنيها)<br />
+                                    من حساب : @payments.Collections.FinishesUnit.Customer.NameCustomer <br />
+                                    لحساب  تشطيب الوحدة : @payments.Collections.FinishesUnit.Information ??
+                                </h4>
+                            </div>
+                            <div class="modal-footer text-right">
+                                <button type="button" class="btn btn-secondary" @onclick="CloseOrprint" data-dismiss="modal">لا تسدد</button>
+                                @if (!DonePay)
+                                {
+                                   <button type="button" class="btn btn-primary" @onclick="PaymentDone">نعم ســـدد</button>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            }
+
+        </div>
+    </div>
+</div>
+@if (payments != null)
+{
+    <!-- Modal EditBuilldingUnit -->
+    <div class="modal fade" id="editModel" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Edit Payment</h5>
+                    <button type="button" class="close" @onclick="NotEditrese" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                @if (paymentMoneyEdit != null)
+                {
+                    <div class="modal-body rightdv">
+                        <div class="row">
+                            <div class="col-md-9">
+                                <div class="form-group text-right">
+                                    <label>مبلــغ @(paymentMoneyEdit.Paymentis == PaymentIs.Installment ? "القسط" : "المدفوع")</label>
+                                    @if (paymentMoneyEdit.Paymentis == PaymentIs.Installment)
+                                    {
+                                        <input type="number" readonly @bind-value="paymentMoneyEdit.Money" class="form-control bg-light" />
+                                    }
+                                    else
+                                    {
+                                        <input type="number" @bind-value="paymentMoneyEdit.Money" class="form-control" />
+                                    }
+                                    <span class="text-black-50">(@paymentMoneyEdit.Money.ConvertNumberToText() جنيها)</span>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>تاريخ</label>
+                                    <input type="date" @bind-value="paymentMoneyEdit.DatePayment" class="form-control" />
+                                    <span class="text-black-50">@paymentMoneyEdit.DatePayment.Todate()</span>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>سداد</label>
+                                    <select @bind="paymentMoneyEdit.CashPayment" class="form-control">
+                                        @foreach (CashPayment item in Enum.GetValues(typeof(CashPayment)))
+                                        {
+                                            <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                        }
+                                    </select>
+                                </div>
+                                @if (paymentMoneyEdit.CashPayment == CashPayment.Sheek || paymentMoneyEdit.CashPayment == CashPayment.Visa)
+                                {
+                                    <div class="form-group text-right">
+                                        <label>@(paymentMoneyEdit.CashPayment == CashPayment.Sheek ? "رقم الشيك والبنك" : "رقم عملية الفيزا")</label>
+                                        <input type="text" @bind-value="paymentMoneyEdit.SheekBank" class="form-control" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="NotEditrese" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @onclick="DoneEdit">Save changes</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@if (payments != null)
+{
+    <!-- Modal EditFinishUnit -->
+    <div class="modal fade" id="editModelFinsh" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Edit Payment</h5>
+                    <button type="button" class="close" @onclick="NotEditunitfinish" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                @if (paymentMoneyEditFinish != null)
+                {
+                    <div class="modal-body rightdv">
+                        <div class="row">
+                            <div class="col-md-9">
+                                <div class="form-group text-right">
+                                    <label>مبلــغ @(paymentMoneyEditFinish.Paymentis == PaymentIs.Installment ? "القسط" : "المدفوع")</label>
+                                    @if (paymentMoneyEditFinish.Paymentis == PaymentIs.Installment)
+                                    {
+                                        <input type="number" readonly @bind-value="paymentMoneyEditFinish.Money" class="form-control bg-light" />
+                                    }
+                                    else
+                                    {
+                                        <input type="number" @bind-value="paymentMoneyEditFinish.Money" class="form-control" />
+                                    }
+                                    <span class="text-black-50">(@paymentMoneyEditFinish.Money.ConvertNumberToText() جنيها)</span>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>تاريخ</label>
+                                    <input type="date" @bind-value="paymentMoneyEditFinish.DatePayment" class="form-control" />
+                                    <span class="text-black-50">@paymentMoneyEditFinish.DatePayment.Todate()</span>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>سداد</label>
+                                    <select @bind="paymentMoneyEditFinish.CashPayment" class="form-control">
+                                        @foreach (CashPayment item in Enum.GetValues(typeof(CashPayment)))
+                                        {
+                                            <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                        }
+                                    </select>
+                                </div>
+                                @if (paymentMoneyEditFinish.CashPayment == CashPayment.Sheek || paymentMoneyEditFinish.CashPayment == CashPayment.Visa)
+                                {
+                                    <div class="form-group text-right">
+                                        <label>@(paymentMoneyEditFinish.CashPayment == CashPayment.Sheek ? "رقم الشيك والبنك" : "رقم عملية الفيزا")</label>
+                                        <input type="text" @bind-value="paymentMoneyEditFinish.SheekBank" class="form-control" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="NotEditunitfinish" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" @onclick="DoneEditFinish">Save changes</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@if (payments != null)
+{
+    <!-- Modal -->
+    <div class="modal fade" id="Deletefinish" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+                    <button type="button" class="close" @onclick="NotEditunitfinish" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                @if (paymentMoneyEditFinish is not null)
+                {
+                    <div class="modal-body text-right">
+                        <h4 class="text-danger">هل تريد فعلا حذف حساب @paymentMoneyEditFinish.Money.ToMoney() بتاريخ @paymentMoneyEdit.DatePayment.Todate() ??</h4>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="NotEditunitfinish" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-danger" @onclick="deleteaccountfinish">Yes Delete</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+}
+
+@if (payments != null)
+{
+    <!-- Modal -->
+    <div class="modal fade" id="DeleteBuildingunit" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+                    <button type="button" class="close" @onclick="NotEditrese" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                @if (paymentMoneyEdit != null)
+                {
+                    <div class="modal-body text-right">
+                        <h4 class="text-danger">هل تريد فعلا حذف حساب @paymentMoneyEdit.Money.ToMoney() بتاريخ @paymentMoneyEdit.DatePayment.Todate() ??</h4>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="NotEditrese" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-danger" @onclick="deleleAccountUNitBuillding">Yes Delete</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+}
+
+@code {
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        if (log.Emplyee.TheJop == Jop.Maneger || log.Emplyee.TheJop == Jop.DataEntry)
+        {
+            Admin = log.ISAdmin;
+
+        }
+        else
+        {
+            nav.NavigateTo("");
+        }
+
+    }
+
+    OperatorPayments? payments = null;
+
+    PaymentMoney? paymentMoneyEdit = null;
+    PaymentFinish? paymentMoneyEditFinish = null;
+    bool DonePay = false;
+    bool Admin = false;
+    bool print = false;
+    bool lodding = false;
+
+    void getEdit(PaymentMoney paymentMoney)
+    {
+        paymentMoneyEdit = paymentMoney;
+    }
+    void NotEditrese()
+    {
+        paymentMoneyEdit = null;
+    }
+    void getEditFinishing(PaymentFinish paymentFinish)
+    {
+        paymentMoneyEditFinish = paymentFinish;
+    }
+    void NotEditunitfinish()
+    {
+        paymentMoneyEditFinish = null;
+    }
+
+    async Task getpay(CollectionsPayment collections)
+    {
+        lodding = true;
+        if (collections != null && (collections.Resertvation != null | collections.FinishesUnit != null))
+        {
+            try
+            {
+                payments = new ThePayments(collections, db);
+                DonePay = false;
+            }
+            catch (Exception)
+            {
+                payments = null;
+                DonePay = false;
+                lodding = false;
+            } 
+        }
+        else
+        {
+            payments = null;
+            DonePay = false;
+        }
+        lodding = false;
+    }
+
+    async Task DoneEdit()
+    {
+        if (paymentMoneyEdit is not null)
+        {
+            @if ((paymentMoneyEdit.CashPayment == CashPayment.Sheek || paymentMoneyEdit.CashPayment == CashPayment.Visa) && string.IsNullOrEmpty(paymentMoneyEdit.SheekBank))
+            {
+                toast.ShowError("ادخل رقم الشيك او عملية الدفع");
+            }
+            else if (paymentMoneyEdit.Money <= 0)
+            {
+                toast.ShowError("ادخل المبلغ");
+
+            }
+            else if (paymentMoneyEdit.Money > payments.MoneyRemaining)
+            {
+                toast.ShowError("المبلغ اكبر من المتبقى !!");
+
+            }
+            else if (paymentMoneyEdit.CashPayment == CashPayment.None)
+            {
+                toast.ShowError("اختر عملية الدفع");
+
+            }
+            else
+            {
+                paymentMoneyEdit.Money = paymentMoneyEdit.Money.ToRound(2);
+                await db.SaveChangeAsync();
+                paymentMoneyEdit = null;
+            }
+        }
+    }
+
+    void CloseOrprint()
+    {
+        if (print && DonePay)
+        {
+            if (payments.Payment != null)
+            {
+                nav.NavigateTo($"/printunit/{payments.Payment.ID}/R");
+            }
+            else if (payments.PaymentFinish is not null)
+            {
+                nav.NavigateTo($"/printunit/{payments.PaymentFinish.ID}/F");
+            }
+        }
+    }
+
+    async Task deleteaccountfinish()
+    {
+        if (paymentMoneyEditFinish != null)
+        {
+            payments.Collections.FinishesUnit.PaymentMoney.Remove(paymentMoneyEditFinish);
+            await db.SaveChangeAsync();
+            paymentMoneyEditFinish = null;
+            toast.ShowError("تم حذف الحساب");
+
+        }
+    }
+
+    async Task deleleAccountUNitBuillding()
+    {
+        if (paymentMoneyEdit != null)
+        {
+            payments.Collections.Resertvation.PaymentMoney.Remove(paymentMoneyEdit);
+            await db.SaveChangeAsync();
+            paymentMoneyEdit = null;
+            toast.ShowError("تم حذف الحساب");
+
+        }
+    }
+
+    async Task DoneEditFinish()
+    {
+        if (paymentMoneyEditFinish is not null)
+        {
+            @if ((paymentMoneyEditFinish.CashPayment == CashPayment.Sheek || paymentMoneyEditFinish.CashPayment == CashPayment.Visa) && string.IsNullOrEmpty(paymentMoneyEditFinish.SheekBank))
+            {
+                toast.ShowError("ادخل رقم الشيك او عملية الدفع");
+            }
+            else if (paymentMoneyEditFinish.Money <= 0)
+            {
+                toast.ShowError("ادخل المبلغ");
+
+            }
+            else if (paymentMoneyEditFinish.Money > payments.MoneyRemaining)
+            {
+                toast.ShowError("المبلغ اكبر من المتبقى !!");
+
+            }
+            else if (paymentMoneyEditFinish.CashPayment == CashPayment.None)
+            {
+                toast.ShowError("اختر عملية الدفع");
+
+            }
+            else
+            {
+                paymentMoneyEditFinish.Money = paymentMoneyEditFinish.Money.ToRound(2);
+                await db.SaveChangeAsync();
+                paymentMoneyEditFinish = null;
+            }
+        }
+    }
+
+    async Task PaymentDone()
+    {
+        if (payments != null)
+        {
+            lodding = true;
+            if (await payments.PaymentDone())
+            {
+                toast.ShowSuccess("تم عملية السداد بنجاح");
+                DonePay = true;
+            }
+
+            else
+                toast.ShowError("هناك خطا حدث لم يتم التمكن من عملية اتمام السداد");
+
+            lodding = false;
+        }
+    }
+    void Cloased()
+    {
+        payments = null;
+        lodding = false;
+    }
+}

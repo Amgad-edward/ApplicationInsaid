@@ -1,0 +1,395 @@
+﻿@page "/companysadding"
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject NavigationManager nav
+
+
+<div class="container rightdv">
+    <HeadPage NameArbic="تسجيل شركات" NameEnglish="Companys"></HeadPage>
+    <div class="card">
+        <div class="card-body text-right">
+            <h4 class="text-info">تسجيل انشطة وشركات تجارية صديقة ومنافسة</h4>
+            <EditForm Model="AddCompany">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group text-right">
+                            <label>اسم الشركة</label>
+                            <InputText @bind-Value="AddCompany.Name" class="form-control"></InputText>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group text-right">
+                            <label>نشاط الشركة</label>
+                            <InputSelect @bind-Value="AddCompany.Specialty" class="form-control">
+                                @foreach (Specialty item in Enum.GetValues(typeof(Specialty)))
+                                {
+                                    <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                    @if (AddCompany.Specialty == Specialty.Other)
+                    {
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label>ادخل نشاط الشركة</label>
+                                <InputText @bind-Value="AddCompany.TheOtherActive" class="form-control"></InputText>
+                            </div>
+                        </div>
+                    }
+
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group text-right">
+                            <label>تصنيف هذة الشركة</label>
+                            <InputSelect @bind-Value="AddCompany.isCompany" class="form-control">
+                                @foreach (IsCompany item in Enum.GetValues(typeof(IsCompany)))
+                                {
+                                    <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    </div>
+                    @if (AddCompany.isCompany == IsCompany.IsCompanyToBenefit)
+                    {
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label> للشركة نسبة فى حالة اخذ خامات</label>
+                                <div class="row">
+                                    <div class="col-10">
+                                        <InputNumber @bind-Value="AddCompany.Persant" class="form-control"></InputNumber>
+                                    </div>
+                                    <div class="col-2"><span>%</span></div>
+                                </div>
+
+                            </div>
+                        </div>
+                    }
+                    <div class="col-md-4">
+                        <div class="form-group text-right">
+                            <label>اسم المدير</label>
+                            <InputText @bind-Value="AddCompany.NameManegar" class="form-control"></InputText>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group text-right">
+                            <label>العنوان</label>
+                            <InputText @bind-Value="AddCompany.Address" class="form-control"></InputText>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group text-right">
+                            <label>الرقم الضريبى</label>
+                            <InputText @bind-Value="AddCompany.TaxNumber" class="form-control"></InputText>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group text-right">
+                            <label>سجل تجارى</label>
+                            <InputText @bind-Value="AddCompany.NumberCommercial" class="form-control"></InputText>
+                        </div>
+                    </div>
+                </div>
+            </EditForm>
+            <div class="form-group">
+                <button class="btn btn-primary w-25" @onclick="addcompanydb">اضافـــة</button>
+            </div>
+        </div>
+    </div>
+    <hr />
+    @if (companys is not null)
+    {
+        <div style="margin-bottom:100px">
+            <RadzenGrid AllowFiltering="true" ColumnWidth="150px" TItem="OtherCompanies" Data="@companys"
+                    AllowSorting="true" PageSize="10" AllowPaging="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                <Columns>
+                    <RadzenGridColumn TItem="OtherCompanies" Context="data" Property="Name" Title="اسم الشركة">
+                        <Template>
+                            <h6>@data.Name</h6>
+                            <p class="text-black-50">@data.NameManegar</p>
+                            <p>@data.Info</p>
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="OtherCompanies" Context="data" Property="Active" Title="النشاط">
+                        
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="OtherCompanies" Property="Address" Title="عنوان"></RadzenGridColumn>
+                    <RadzenGridColumn TItem="OtherCompanies" Title="التصنيف">
+                        <Template>
+                            @if (context.Iscompetitivecompany)
+                            {
+                                <h6 class="text-danger">شركة منافسة</h6>
+                            }
+                            else if (context.IsCompanyToBenefit)
+                            {
+                                <h6 class="text-success">شركة صديقة</h6>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                    <RadzenGridColumn TItem="OtherCompanies" Context="data" Title="#####">
+                        <Template>
+                            <Button T_type="OtherCompanies" ModalID="editCompany" eventBack="Getmadel" Class="btn-info" TheValue="data">
+                                <Render>
+                                    <i class="bi bi-pencil-square"></i>
+                                </Render>
+                            </Button>
+                            <Button T_type="OtherCompanies" ModalID="deleteCompany" eventBack="Getmadel" Class="btn-danger" TheValue="data">
+                                <Render>
+                                    <i class="bi bi-trash"></i>
+                                </Render>
+                            </Button>
+                            @if (Admin)
+                            {
+                               <a class="btn btn-outline-dark" title="حركة حساب الشركة والتقارير" href="/accountmovecompany/@data.Id"><i class="icofont-list"></i></a>
+                            }
+                        </Template>
+                    </RadzenGridColumn>
+                </Columns>
+            </RadzenGrid>
+        </div>
+    }
+</div>
+
+<!-- Modal Edit-->
+<div class="modal fade" id="editCompany" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit</h5>
+                <button type="button" class="close" @onclick="Notmodel" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (madel != null)
+            {
+                <div class="modal-body">
+                    <div class="row rightdv">
+                        <div class="col-md-12">
+                            <EditForm Model="madel">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group text-right">
+                                            <label>اسم الشركة</label>
+                                            <InputText @bind-Value="madel.Name" class="form-control"></InputText>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group text-right">
+                                            <label>نشاط الشركة</label>
+                                            <InputSelect @bind-Value="madel.Specialty" class="form-control">
+                                                @foreach (Specialty item in Enum.GetValues(typeof(Specialty)))
+                                                {
+                                                <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                                }
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                                @if (madel.Specialty == Specialty.Other)
+                                    {
+                                        <div class="col-md-4">
+                                            <div class="form-group text-right">
+                                                <label>ادخل نشاط الشركة</label>
+                                                <InputText @bind-Value="madel.TheOtherActive" class="form-control"></InputText>
+                                            </div>
+                                        </div>
+                                    }
+
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group text-right">
+                                            <label>تصنيف هذة الشركة</label>
+                                            <InputSelect @bind-Value="madel.isCompany" class="form-control">
+                                                @foreach (IsCompany item in Enum.GetValues(typeof(IsCompany)))
+                                                {
+                                                <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                                }
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                                @if (madel.isCompany == IsCompany.IsCompanyToBenefit)
+                                    {
+                                        <div class="col-md-4">
+                                            <div class="form-group text-right">
+                                                <label> للشركة نسبة فى حالة اخذ خامات</label>
+                                                <div class="row">
+                                                    <div class="col-10">
+                                                        <InputNumber @bind-Value="madel.Persant" class="form-control"></InputNumber>
+                                                    </div>
+                                                    <div class="col-2"><span>%</span></div>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="col-md-4">
+                                        <div class="form-group text-right">
+                                            <label>اسم المدير</label>
+                                            <InputText @bind-Value="madel.NameManegar" class="form-control"></InputText>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group text-right">
+                                            <label>العنوان</label>
+                                            <InputText @bind-Value="madel.Address" class="form-control"></InputText>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group text-right">
+                                            <label>الرقم الضريبى</label>
+                                            <InputText @bind-Value="madel.TaxNumber" class="form-control"></InputText>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group text-right">
+                                            <label>سجل تجارى</label>
+                                            <InputText @bind-Value="madel.NumberCommercial" class="form-control"></InputText>
+                                        </div>
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="Notmodel" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveEdit">Save changes</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Delete-->
+<div class="modal fade" id="deleteCompany" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+                <button type="button" class="close" @onclick="Notmodel" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (madel != null)
+            {
+                @if(madel.GetAllInvice.Count > 0 || madel.Accounts.Count() > 0)
+                {
+                     <div class="modal-body text-right">
+                         <h5 class="text-danger">هناك تعاملاات وفواتير هذة الشركة ولا يمكن حذفها</h5>
+                    </div>
+                   <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="Notmodel" data-dismiss="modal">Close</button>
+                    </div>
+                }
+                else
+                {
+                 <div class="modal-body text-right">
+                    <h6>هل تريد حذف شركة @madel.Name ??</h6>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="Notmodel" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="Delete" class="btn btn-danger">Yes</button>
+                </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+
+    [Inject]
+    public IToastService toast { get; set; }
+
+    IEnumerable<OtherCompanies>? companys = null;
+
+    OtherCompanies? AddCompany = new OtherCompanies();
+
+    OtherCompanies? madel = null;
+    bool Admin = false;
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        Admin = log.ISAdmin;
+        await GetCompanys();
+    }
+
+    void Getmadel(OtherCompanies otherCompanies)
+    {
+        madel = otherCompanies;
+    }
+
+    void Notmodel()
+    {
+        madel = null;
+    }
+
+    async Task SaveEdit()
+    {
+        if (string.IsNullOrEmpty(madel.Name))
+            toast.ShowError("ادخل اسم الشركة");
+        else if (string.IsNullOrEmpty(madel.Address))
+            toast.ShowError("ادخل عنوان الشركة");
+        else if (madel.Specialty == Specialty.None)
+            toast.ShowError("ادخل نشاط الشركة");
+        else if (madel.Specialty == Specialty.Other && string.IsNullOrEmpty(madel.TheOtherActive))
+            toast.ShowError("ادخل نشاط الشركة");
+        else if (madel.isCompany == IsCompany.None)
+            toast.ShowError("ادخل تصنيف الشركة");
+        else
+        {
+            await db.SaveChangeAsync();
+            madel = null;
+        }
+    }
+
+    async Task Delete()
+    {
+        if(madel is not null)
+        {
+            await db.OtherCompanies.DeleteAsync(madel);
+            madel = null;
+           await GetCompanys();
+        }
+    }
+
+    async Task GetCompanys()
+    {
+        companys = await db.OtherCompanies.Include(M => M.Materials).ThenInclude(b => b.BuildingCosts)
+                         .Include(M => M.Materials).ThenInclude(Finish => Finish.FinishCosts)
+                         .Include(r => r.RepostsThisCompany).Include(acc=>acc.Accounts).ToListAsync();
+
+    }
+
+    async Task addcompanydb()
+    {
+        if (string.IsNullOrEmpty(AddCompany.Name))
+            toast.ShowError("ادخل اسم الشركة");
+        else if (string.IsNullOrEmpty(AddCompany.Address))
+            toast.ShowError("ادخل عنوان الشركة");
+        else if (AddCompany.Specialty == Specialty.None)
+            toast.ShowError("ادخل نشاط الشركة");
+        else if (AddCompany.Specialty == Specialty.Other && string.IsNullOrEmpty(AddCompany.TheOtherActive))
+            toast.ShowError("ادخل نشاط الشركة");
+        else if (AddCompany.isCompany == IsCompany.None)
+            toast.ShowError("ادخل تصنيف الشركة");
+        else if (await db.OtherCompanies.AnyAsync(x => x.Name == AddCompany.Name))
+            toast.ShowInfo("هذة الشركة مضافة مسبقا");
+        else
+        {
+            await db.OtherCompanies.AddAsync(AddCompany);
+            AddCompany = new OtherCompanies();
+            toast.ShowSuccess("Done");
+            await GetCompanys();
+        }
+    }
+}

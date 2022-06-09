@@ -1,0 +1,929 @@
+﻿@page "/consttheproject/{id:int}"
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject IToastService toast
+
+
+
+
+
+@if (_project != null)
+{
+
+    <div class="container rightdv">
+        <HeadPage NameArbic="@(_project.ProjectName+ " - " + "المصروفات التى تم صرفها ")" NameEnglish="Account Payment"></HeadPage>
+        <div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h3>@_project.ProjectName</h3>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-5 text-right text-dark">
+                            <h6>اجمالى المصروفات : @_project.TotalCostPayment.ToMoney() (@_project.TotalCostPayment.ConvertNumberToText())</h6>
+                        </div>
+                        <div class="col-md-5 text-right text-danger">
+                            <h6>اجمالى المقايسات : @_project.TotalConstructAssay.ToMoney() (@_project.TotalCostPayment.ConvertNumberToText())</h6>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-5 text-right text-success">
+                            <h6>اجمالى المسدد : @_project.TotalPaymentCostDone.ToMoney() (@_project.TotalPaymentCostDone.ConvertNumberToText())</h6>
+                        </div>
+                        <div class="col-md-5 text-right text-danger">
+                            <h6>اجمالى المتبقى <span>(مديونية)</span> : @_project.TotalReminaning.ToMoney() (@_project.TotalReminaning.ConvertNumberToText())</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr />
+        <div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-11">
+                            <div class="form-group text-right">
+                                <label>اختر طريقة الحساب</label>
+                                <select @bind="account" class="form-control">
+                                    @foreach (AddAccount item in Enum.GetValues(typeof(AddAccount)))
+                                    {
+                                        <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    @if (account == AddAccount.Cost || account == AddAccount.Costruct)
+                    {
+                        <EditForm Model="addcost">
+                            <div class="row">
+                                <div class="col-md-7">
+                                    <div class="form-group text-right">
+                                        <label>اختر الى حساب</label>
+                                        <select @bind="SelectCost" class="form-control">
+                                            @foreach (Selections item in Enum.GetValues(typeof(Selections)))
+                                            {
+                                                <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+
+                            </div>
+                            @if (SelectCost == Selections.Maker)
+                            {
+                                <div class="row">
+                                    <div class="col-md-7">
+                                        <div class="form-group text-right">
+                                            <label>اختر اسم الصانع</label>
+                                            <AutoCompeleMaker GetMaker="getthemaker"></AutoCompeleMaker>
+                                        </div>
+                                    </div>
+                                    @if (addcost.Maker is { })
+                                    {
+                                        <div class="col-md-5 text-right">
+                                            <p class="text-black-50 mt-2">@addcost.Maker.JopTitel - @addcost.Maker.AverageEvaluation %</p>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-10">
+                                        <div class="form-group text-right">
+                                            <label>العمل الذى تم انجازة</label>
+                                            <InputTextArea @bind-Value="addcost.ToAccount" class="form-control"></InputTextArea>
+                                        </div>
+                                    </div>
+                                </div>
+                                @if (addcost.Maker is not null)
+                                {
+                                    @if (addcost.Maker.Weight is { })
+                                    {
+                                        <div class="row">
+                                            <div class="col-md-7">
+                                                <div class="form-group text-right">
+                                                    <label>الكمية بالـ @(addcost.Maker.Weight != null ? addcost.Maker.Weight.NameWeight :"")</label>
+                                                    <InputNumber @bind-Value="addcost.CountWeight" class="form-control"></InputNumber>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                <div class="row">
+                                    <div class="col-md-7">
+                                        <div class="form-group text-right">
+                                            <label>اجمالى مبلغ التكلفة</label>
+                                            <InputNumber @bind-Value="addcost.TotalPrice" class="form-control"></InputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-right">
+                                        <p class="text-black-50 mt-2">
+                                            (@addcost.TotalPrice.ConvertNumberToText() جنيها) -
+                                            بقدار : @addcost.MaketWeight
+                                        </p>
+                                    </div>
+                                </div>
+                                @if (account == AddAccount.Cost)
+                                {
+                                    <div class="row">
+                                        <div class="col-md-5">
+                                            <div class="form-group text-right">
+                                                <label>اختر دفع هذا الحساب</label>
+                                                <InputSelect @bind-Value="doPayment" class="form-control">
+                                                    @foreach (DoPayment item in Enum.GetValues(typeof(DoPayment)))
+                                                    {
+                                        <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                    </div>
+                                    @if (doPayment == DoPayment.YesNotAll)
+                                    {
+                                        <div class="row">
+                                            <div class="col-md-5">
+                                                <div class="form-group text-right">
+                                                    <label>المبلغ المدفوع</label>
+                                                    <InputNumber @bind-Value="addcost.PaymentNow" class="form-control"></InputNumber>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-7 text-right">
+                                                <p>(فقط @addcost.PaymentNow.ConvertNumberToText())</p>
+                                                <p class="text-danger">
+                                                    المتبقى : @((addcost.TotalPrice - addcost.PaymentNow).ToMoney())
+                                                </p>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+
+                            }
+                            else if (SelectCost == Selections.Materail)
+                            {
+                                <div class="row">
+                                    <div class="col-md-7">
+                                        <div class="form-group text-right">
+                                            <label>اختر اسم الخامة</label>
+                                            <AutoCompleteMaterails GetMaterail="getthematiral"></AutoCompleteMaterails>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-10">
+                                        <div class="form-group text-right">
+                                            <label>استخدام الخامة فى</label>
+                                            <InputTextArea @bind-Value="addcost.ToAccount" class="form-control"></InputTextArea>
+                                        </div>
+                                    </div>
+                                </div>
+                                @if (addcost.Material is { })
+                                {
+                                    <div class="row">
+                                        <div class="col-md-7">
+                                            <div class="form-group text-right">
+
+                                                <label>الكمية بالـ @(addcost.Material.Weight!= null ? addcost.Material.Weight.NameWeight :"")</label>
+                                                <InputNumber @bind-Value="addcost.CountWeight" class="form-control"></InputNumber>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-7">
+                                            <div class="form-group text-right">
+                                                <label>اجمالى المبلغ</label>
+                                                <InputNumber @bind-Value="addcost.TotalPrice" class="form-control"></InputNumber>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5 text-right">
+                                            <p class="text-black-50 mt-2">
+                                                (@addcost.TotalPrice.ConvertNumberToText() جنيها) -
+                                                بقدار : @addcost.MaterailWeight
+                                            </p>
+                                        </div>
+                                    </div>
+                                    @if (account == AddAccount.Cost)
+                                    {
+                                        <div class="row">
+                                            <div class="col-md-5">
+                                                <div class="form-group text-right">
+                                                    <label>اختر دفع هذا الحساب</label>
+                                                    <InputSelect @bind-Value="doPayment" class="form-control">
+                                                        @foreach (DoPayment item in Enum.GetValues(typeof(DoPayment)))
+                                                        {
+                                        <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                                        }
+                                </InputSelect>
+                            </div>
+                        </div>
+                    </div>
+                                        @if (doPayment == DoPayment.YesNotAll)
+                                        {
+                                            <div class="row">
+                                                <div class="col-md-5">
+                                                    <div class="form-group text-right">
+                                                        <label>المبلغ المدفوع</label>
+                                                        <InputNumber @bind-Value="addcost.PaymentNow" class="form-control"></InputNumber>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-7 text-right">
+                                                    <p>(فقط @addcost.PaymentNow.ConvertNumberToText())</p>
+                                                    <p class="text-danger">
+                                                        المتبقى : @((addcost.TotalPrice - addcost.PaymentNow).ToMoney())
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                }
+                            }
+                            else if (SelectCost == Selections.Other)
+                            {
+                                <div class="row">
+                                    <div class="col-md-10">
+                                        <div class="form-group text-right">
+                                            <label>الى حساب</label>
+                                            <InputTextArea @bind-Value="addcost.ToAccount" class="form-control"></InputTextArea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-7">
+                                        <div class="form-group text-right">
+                                            <label>اجمالى المبلغ</label>
+                                            <InputNumber @bind-Value="addcost.TotalPrice" class="form-control"></InputNumber>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5 text-right">
+                                        <p class="text-black-50 mt-2">
+                                            (@addcost.TotalPrice.ConvertNumberToText() جنيها)
+                                        </p>
+                                    </div>
+                                </div>
+                                @if (account == AddAccount.Cost)
+                                {
+                                    <div class="row">
+                                        <div class="col-md-5">
+                                            <div class="form-group text-right">
+                                                <label>اختر دفع هذا الحساب</label>
+                                                <InputSelect @bind-Value="doPayment" class="form-control">
+                                                    @foreach (DoPayment item in Enum.GetValues(typeof(DoPayment)))
+                                                    {
+                                        <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                    </div>
+                                    @if (doPayment == DoPayment.YesNotAll)
+                                    {
+                                        <div class="row">
+                                            <div class="col-md-5">
+                                                <div class="form-group text-right">
+                                                    <label>المبلغ المدفوع</label>
+                                                    <InputNumber @bind-Value="addcost.PaymentNow" class="form-control"></InputNumber>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-7 text-right">
+                                                <p>(فقط @addcost.PaymentNow.ConvertNumberToText())</p>
+                                                <p class="text-danger">
+                                                    المتبقى : @((addcost.TotalPrice - addcost.PaymentNow).ToMoney())
+                                                </p>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            }
+                            <div class="row">
+                                @if (account == AddAccount.Cost)
+                                {
+                                    <div class="col-md-4 text-right">
+                                        <label>رقم الفاتورة الشراء</label>
+                                        <InputText @bind-Value="addcost.InvoiceNumber" class="form-control"></InputText>
+                                    </div>
+                                }
+                                <div class="col-md-4 text-right">
+                                    <label>تـــاريخ</label>
+                                    <InputDate @bind-Value="addcost.Date" class="form-control"></InputDate>
+                                </div>
+                                @if (account == AddAccount.Cost && SelectCost != Selections.Other && SelectCost != Selections.None)
+                                {
+                                    @if (addcost.Maker is { } || addcost.Material is { })
+                                    {
+                                        <div class="col-md-4 text-right">
+                                            <label>تقيمك للـ @(SelectCost == Selections.Maker ? $"لمصنعية {addcost.Maker.NameMaker}" : $"للخامة {addcost.Material.NameMaterial}")</label>
+                                            <p class="text-center">@addcost.Evaluation %</p>
+                                            <input type="range" max="100" min="0" @bind-value="addcost.Evaluation" class="form-control-range" />
+                                        </div>
+                                    }
+                                }
+                            </div>
+
+                        </EditForm>
+                        <div class="form-group text-right mt-3">
+                            <button class="btn btn-primary" @onclick="AddingAccountdb">اضافة @(account == AddAccount.Cost ? "الحساب"  :"المقايسة")</button>
+                        </div>
+
+                    }
+                </div>
+            </div>
+        </div>
+        <hr />
+        <div>
+
+
+            <div class="mb-3">
+                @if (_project.BuildingCosts.Any(x => x.ISPaymentDone))
+                {
+                    <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#payment" aria-expanded="false" aria-controls="payment">
+                        اظهار الحسابات المدفوعة
+                    </button>
+                }
+                @if (_project.BuildingCosts.Any(x => !x.ISPaymentDone))
+                {
+                    <button class="btn btn-primary mr-2" type="button" data-toggle="collapse" data-target="#costructs" aria-expanded="false" aria-controls="costructs">
+                        اظهار المقايس <span>(غير مدفوعة)</span>
+                    </button>
+                }
+            </div>
+
+            @if (CostPayment is not null)
+            {
+                <div class="collapse multi-collapse" id="payment">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="mt-2 mb-3">
+                                <div class="col-4">
+                                    <input type="search" @onchange="Searched" @bind-value="searchPayment" @bind-value:event="oninput" class="form-control" placeholder="بحث" />
+                                </div>
+                                <h2>المدفوعات</h2>
+                            </div>
+                            <ShowTable Class="table-light animate__animated animate__fadeIn" TheadClass="thead-dark sticky-top " itemtype="BuildingCost" Items="CostPayment">
+                                <Columns>
+                                    <th>الى حساب</th>
+                                    <th>المبلغ</th>
+                                    <th>تاريخ</th>
+                                    <th>المبلغ المدفوع</th>
+                                    <th>المبلغ المتبقى</th>
+                                    <th>Action</th>
+                                </Columns>
+                                <Rows>
+                                    <td class="">
+                                        @if (context.Maker != null)
+                                        {
+                                            <h4>@context.Maker.NameMaker</h4>
+                                            <p>@context.ToAccount</p>
+                                        }
+                                        else if (context.Material != null)
+                                        {
+                                            <h4>@context.Material.NameMaterial</h4>
+                                            <p>@context.ToAccount</p>
+                                        }
+                                        else
+                                        {
+                                            <p>@context.ToAccount</p>
+                                        }
+                                    </td>
+                                    <td>
+                                        @context.TotalPrice.ToMoney();
+                                        <p>(@context.TotalPrice.ConvertNumberToText())</p>
+                                        @if (context.Maker != null)
+                                        {
+                                            if (context.Maker.Weight != null)
+                                            {
+                                                <p>@context.MaketWeight</p>
+                                            }
+                                        }
+                                        else if (context.Material != null)
+                                        {
+                                            <p>@context.MaterailWeight</p>
+                                        }
+                                    </td>
+                                    <td>@context.Date.ToDate()</td>
+                                    <td>
+                                        @context.TotalPayment.ToMoney()
+                                        <p>(@context.TotalPayment.ConvertNumberToText() جنيها)</p>
+                                    </td>
+                                    <td>
+                                        @context.TotalRemaining.ToMoney()
+                                        <p>(@context.TotalRemaining.ConvertNumberToText() جنيها)</p>
+                                    </td>
+                                    <td>
+                                        <Button T_type="BuildingCost" eventBack="getmodel" ModalID="Deletecost" Class="btn-danger" TheValue="context">
+                                            <Render>
+                                                <i class="bi bi-trash"></i>
+                                            </Render>
+                                        </Button>
+                                        <Button T_type="BuildingCost" eventBack="getmodel" ModalID="Edit" Class="btn-outline-light text-dark ml-1" TheValue="context">
+                                            <Render>
+                                                <i class="bi bi-pencil-square"></i>
+                                            </Render>
+                                        </Button>
+                                    </td>
+
+                                </Rows>
+                            </ShowTable>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (Costrust is not null)
+            {
+                <div class="collapse multi-collapse mt-4" id="costructs">
+                    <div class="card text-right">
+
+                        <div class="card-body">
+                            <div class="mt-2 mb-3">
+                                <div class="col-4">
+                                    <input type="search" @onchange="SearchedCosturct" @bind-value="searchcostruct" @bind-value:event="oninput" class="form-control" placeholder="بحث" />
+                                </div>
+                                <h2>مقايسة</h2>
+                            </div>
+                            <ShowTable Class="table-light animate__animated animate__fadeIn" TheadClass="thead-dark sticky-top" itemtype="BuildingCost" Items="Costrust">
+                                <Columns>
+                                    <th>الى حساب</th>
+                                    <th>المبلغ</th>
+                                    <th>تاريخ عمل المقايسة</th>
+                                    <th>اضافة الى الحساب</th>
+                                    <th>Action</th>
+                                </Columns>
+                                <Rows>
+                                    <td>
+                                        @if (context.Maker != null)
+                                        {
+                                            <h4>@context.Maker.NameMaker</h4>
+                                            <p>@context.ToAccount</p>
+                                        }
+                                        else if (context.Material != null)
+                                        {
+                                            <h4>@context.Material.NameMaterial</h4>
+                                            <p>@context.ToAccount</p>
+                                        }
+                                        else
+                                        {
+                                            <p>@context.ToAccount</p>
+                                        }
+                                    </td>
+                                    <td>
+                                        @context.TotalPrice.ToMoney();
+                                        <p>(@context.TotalPrice.ConvertNumberToText())</p>
+                                        @if (context.Maker != null)
+                                        {
+                                            if (context.Maker.Weight != null)
+                                            {
+                                                <p>@context.MaketWeight</p>
+                                            }
+                                        }
+                                        else if (context.Material != null)
+                                        {
+                                            <p>@context.MaterailWeight</p>
+                                        }
+                                    </td>
+                                    <td>@context.Date.ToDate()</td>
+                                    <td>
+                                        <div class="form-group text-right">
+                                            <label>اضف هذا الى الحساب</label>
+                                            <select @bind="toAddPayment" class="form-control">
+                                                @foreach (DoPayment item in Enum.GetValues(typeof(DoPayment)))
+                                                {
+                                                    <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        @if (toAddPayment == DoPayment.YesNotAll)
+                                        {
+                                            <div class="form-group text-right">
+                                                <label>المبلغ المدفوع</label>
+                                                <input type="number" @bind-value="context.PaymentNow" class="form-control" />
+                                                <span>المتبقى : @((context.TotalPrice - context.PaymentNow).ToMoney())</span>
+                                            </div>
+                                        }
+                                        @if (toAddPayment != DoPayment.None)
+                                        {
+                                            <Button Class="btn-success" eventBack="savePay" T_type="BuildingCost" TheValue="context">
+                                                <Render>
+                                                    <span>اضافة الى الحساب</span>
+                                                </Render>
+                                            </Button>
+                                        }
+                                    </td>
+                                    <td>
+                                        <Button T_type="BuildingCost" eventBack="getmodel" ModalID="Deletecost" Class="btn-danger" TheValue="context">
+                                            <Render>
+                                                <i class="bi bi-trash"></i>
+                                            </Render>
+                                        </Button>
+                                        <Button T_type="BuildingCost" eventBack="getmodel" ModalID="Edit" Class="btn-outline-light text-dark ml-1" TheValue="context">
+                                            <Render>
+                                                <i class="bi bi-pencil-square"></i>
+                                            </Render>
+                                        </Button>
+                                    </td>
+                                </Rows>
+                            </ShowTable>
+                        </div>
+                    </div>
+                </div>
+            }
+
+        </div>
+
+    </div>
+}
+
+<!-- Modal Delete Cost -->
+<div class="modal fade" id="Deletecost" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+                <button type="button" class="close" @onclick="EmptyModel" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (ModelCost is not null)
+            {
+                <div class="modal-body text-right">
+                    <h5>هل تريد حذف حساب @ModelCost.NameCost ??</h5>
+                    @if (ModelCost.TotalPayment > 0)
+                    {
+                        <h5 class="text-danger">احذر هناك حساب مدفوع سيتم : @ModelCost.TotalPayment.ToMoney() وسيتم حذف</h5>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="EmptyModel" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="DeleteTheCost" class="btn btn-danger">Yes Delete</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Cost -->
+<div class="modal fade" id="Edit" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit</h5>
+                <button type="button" class="close" @onclick="EmptyModel" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (ModelCost is not null)
+            {
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group text-right">
+                                <label>اجمالى المبلغ</label>
+                                <input type="number" @bind-value="ModelCost.TotalPrice" class="form-control" />
+                                <span class="text-black-50">@ModelCost.TotalPrice.ConvertNumberToText()</span>
+                            </div>
+                            <div class="form-group text-right">
+                                <label>الكمية</label>
+                                <input type="number" @bind-value="ModelCost.CountWeight" class="form-control" />
+                                <span class="text-black-50">@ModelCost.TheWeighteOf</span>
+                            </div>
+                            <div class="form-group text-right">
+                                <label>بتاريخ</label>
+                                <input type="date" @bind-value="@ModelCost.Date" class="form-control" />
+                                <span class="text-black-50">@ModelCost.Date.ToDate()</span>
+                            </div>
+                            <div class="form-group text-right">
+                                <label>رقم الفاتورة الشراء</label>
+                                <input @bind-value="ModelCost.InvoiceNumber" class="form-control"/>
+                            </div>
+                            <div class="rightdv">
+                                @if (ModelCost.ManeyPaymentCosts is not null && ModelCost.ISPaymentDone)
+                                {
+                                    <p>المدوفوعات</p>
+                                    @foreach (var Pay in ModelCost.ManeyPaymentCosts)
+                                    {
+                                        <div class="row justify-content-between">
+                                            <div class="col-md-6">
+                                                <div class="form-group text-right">
+                                                    <label>المبلغ المدفوع</label>
+                                                    <input type="number" @bind-value="Pay.ManeyPayment" class="form-control" />
+                                                    <span class="text-danger">@ModelCost.TotalRemaining.ToMoney()</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <div class="form-group text-right">
+                                                    <label>بتاريخ</label>
+                                                    <input type="date" @bind-value="Pay.date" class="form-control" />
+                                                    <span class="text-danger">المتبقى :  @ModelCost.TotalRemaining.ToMoney()</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <Button T_type="ThePaymentCost" eventBack="deletepayment" TheValue="Pay" Class="close text-danger mt-4 ml-3">
+                                                    <Render>
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </Render>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <hr />
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="EmptyModel" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="SaveTheModelCostEdit" class="btn btn-success">Save Change</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+
+    [Inject]
+    public NavigationManager? nav { get; set; }
+
+    [Parameter]
+    public int id { get; set; }
+
+    Project? _project = null;
+
+    BuildingCost? addcost = new BuildingCost();
+
+    BuildingCost? ModelCost = null;
+
+    IEnumerable<BuildingCost>? CostPayment = null;
+    IEnumerable<BuildingCost>? Costrust = null;
+
+    string searchPayment = "";
+    string searchcostruct = "";
+    string Animated = "animate__animated animate__zoomOut";
+
+    void Searched()
+    {
+        var s = _project.BuildingCosts.Where(x => x.ISPaymentDone);
+        CostPayment = s.Where(x => x.NameCost.Contains(searchPayment));
+    }
+
+    void SearchedCosturct()
+    {
+        Costrust = _project.BuildingCosts.Where(x => !x.ISPaymentDone && x.NameCost.Contains(searchcostruct));
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        if (!log.ISAdmin || log.Emplyee.TheJop == Jop.ISManegerEngineer)
+        {
+            nav.NavigateTo("");
+        }
+        await getproject();
+    }
+
+    Selections SelectCost;
+
+    AddAccount account;
+
+    DoPayment doPayment;
+
+    DoPayment toAddPayment;
+
+    void getthemaker(Maker maker)
+    {
+
+        if (maker.Id > 0)
+        {
+            addcost.Idmaker = maker.Id;
+            addcost.Maker = maker;
+        }
+        else
+        {
+            addcost.Idmaker = null;
+            addcost.Maker = null;
+        }
+
+    }
+
+    void deletepayment(ThePaymentCost thePayment)
+    {
+        if (ModelCost != null)
+            ModelCost.ManeyPaymentCosts.Remove(thePayment);
+    }
+
+
+    void getthematiral(Materials materials)
+    {
+        if (materials.Id > 0)
+        {
+            addcost.IdMaterial = materials.Id;
+            addcost.Material = materials;
+        }
+        else
+        {
+            addcost.IdMaterial = null;
+            addcost.Material = null;
+        }
+    }
+
+    void getmodel(BuildingCost building)
+    {
+        ModelCost = building;
+    }
+
+    void EmptyModel()
+    {
+        ModelCost = null;
+    }
+
+    async Task SaveTheModelCostEdit()
+    {
+        if (ModelCost.TotalPrice <= 0)
+        {
+            toast.ShowError("برجاء ادخال اجمالى المبلغ");
+        }
+        else if (ModelCost.TotalPayment > ModelCost.TotalPrice)
+        {
+            toast.ShowError("المبلغ المسددة اكبر من المبلغ المطلوب");
+        }
+        else
+        {
+            await db.SaveChangeAsync();
+            ModelCost = null;
+        }
+
+    }
+
+    async Task DeleteTheCost()
+    {
+        if (ModelCost != null)
+        {
+            if (ModelCost.TotalPayment > 0)
+            {
+                await db.ThePaymentCosts.DeleteAsync(ModelCost.ManeyPaymentCosts);
+            }
+            await db.BuildingCosts.DeleteAsync(ModelCost.Id);
+            ModelCost = null;
+            toast.ShowSuccess("Done");
+        }
+    }
+
+    async Task savePay(BuildingCost building)
+    {
+        var payment = new ThePaymentCost
+            {
+                IdBuildingcost = building.Id,
+                date = building.Date
+            };
+        if (toAddPayment == DoPayment.YesNotAll)
+        {
+            payment.ManeyPayment = building.PaymentNow.ToRound(2);
+            await db.ThePaymentCosts.AddAsync(payment);
+        }
+
+        else if (toAddPayment == DoPayment.All)
+        {
+            payment.ManeyPayment = building.TotalPrice.ToRound(2);
+            await db.ThePaymentCosts.AddAsync(payment);
+        }
+        building.ISPaymentDone = true;
+        await db.SaveChangeAsync();
+
+    }
+
+
+
+    private async Task AddingAccountdb()
+    {
+        if (account == AddAccount.Cost)
+        {
+            if (IsCorrect())
+            {
+                addcost.ISPaymentDone = true;
+                addcost.IdProject = _project.Id;
+                addcost.Maker = null;
+                addcost.Material = null;
+                addcost.TotalPrice = addcost.TotalPrice.ToRound(2);
+                addcost.ManeyPaymentCosts = new List<ThePaymentCost>();
+                await db.BuildingCosts.AddAsync(addcost);
+                if (doPayment != DoPayment.No || doPayment != DoPayment.None)
+                {
+                    var Payment = new ThePaymentCost
+                        {
+                            date = addcost.Date,
+                            IdBuildingcost = addcost.Id
+
+                        };
+
+                    if (doPayment == DoPayment.YesNotAll)
+                    {
+                        Payment.ManeyPayment = addcost.PaymentNow.ToRound(2);
+                    }
+                    else if (doPayment == DoPayment.All)
+                    {
+                        Payment.ManeyPayment = addcost.TotalPrice.ToRound(2);
+                    }
+
+                    await db.ThePaymentCosts.AddAsync(Payment);
+                }
+
+                addcost = new BuildingCost();
+                SelectCost = Selections.None;
+                account = AddAccount.None;
+                doPayment = DoPayment.None;
+                toast.ShowSuccess("Done Add");
+
+            }
+
+        }
+        else if (account == AddAccount.Costruct)
+        {
+            addcost.ISPaymentDone = false;
+            addcost.IdProject = _project.Id;
+            addcost.Maker = null;
+            addcost.Material = null;
+            await db.BuildingCosts.AddAsync(addcost);
+            addcost = new BuildingCost();
+            SelectCost = Selections.None;
+            account = AddAccount.None;
+            toast.ShowSuccess("Done Add");
+        }
+    }
+
+    async Task toPayment()
+    {
+        await db.SaveChangeAsync();
+    }
+
+
+
+    bool IsCorrect()
+    {
+        if (SelectCost == Selections.Maker)
+        {
+            if (addcost.Idmaker == null)
+            {
+                toast.ShowError("برجاء اختيار الصانع");
+                return false;
+            }
+        }
+        else if (SelectCost == Selections.Materail)
+        {
+            if (addcost.IdMaterial == null)
+            {
+                toast.ShowError("برجاء اختيار الخامة");
+                return false;
+            }
+            else if (addcost.CountWeight <= 0)
+            {
+                toast.ShowError("برجاء كتابة الكمية");
+                return false;
+            }
+
+        }
+        else if (SelectCost == Selections.Other)
+        {
+            if (string.IsNullOrEmpty(addcost.ToAccount))
+            {
+                toast.ShowError("برجاء كتابة الى حساب");
+                return false;
+            }
+        }
+        if (addcost.TotalPrice <= 0)
+        {
+            toast.ShowError("اكتب اجمالى المبلغ");
+            return false;
+        }
+        if (account == AddAccount.Cost)
+        {
+            if (doPayment == DoPayment.YesNotAll && addcost.PaymentNow <= 0)
+            {
+                toast.ShowError("ادخل المبلغ المدفوع");
+                return false;
+            }
+        }
+
+        return true;
+
+    }
+
+
+    async Task getproject()
+    {
+        _project = await db.Projects
+                          .Include(c => c.BuildingCosts).ThenInclude(m => m.Material)
+                          .Include(c => c.BuildingCosts).ThenInclude(m => m.Maker)
+                          .Include(b => b.BuildingCosts).ThenInclude(pays => pays.ManeyPaymentCosts)
+                          .FirstOrDefaultAsync(x => x.Id == id);
+        CostPayment = _project.BuildingCosts.Where(x => x.ISPaymentDone);
+        Costrust = _project.BuildingCosts.Where(x => !x.ISPaymentDone);
+    }
+
+
+}
+

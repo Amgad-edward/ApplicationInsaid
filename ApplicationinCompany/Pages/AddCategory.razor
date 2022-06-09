@@ -1,0 +1,248 @@
+﻿@page "/addcats"
+@inject IUntiWork db
+@inject IToastService toast
+
+
+
+<div class="container rightdv">
+    <HeadPage NameArbic="اضافة تعريفات" NameEnglish="Adding"></HeadPage>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-right">
+                    <h3>اضافة تصفيفات الوحدات</h3>
+                    <div class="form-group text-right">
+                        <label>اسم التصنيف</label>
+                        <input type="text" class="form-control" @bind-value="Namecategory" placeholder="التصنيف" />
+                    </div>
+                    <div class="form-group text-right">
+                        <button type="button" class="btn btn-primary w-50" @onclick="AddcategorysName">اضافة</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 overflow-auto" style="max-height:450px">
+            <div class="card">
+                <div class="card-body">
+                    @if (category != null)
+                    {
+                        <ShowTable itemtype="Category" Class="table-light" Items="category" TheadClass="thead-light">
+                            <Columns>
+                                <th>الاسم</th>
+                                <th>ِAction</th>
+                            </Columns>
+                            <Rows>
+                                <td>@context.CategoryName</td>
+                                <td>
+                                    <Button Class="btn-danger" T_type="int" TheValue="@context.Id">
+                                        <Render>
+                                            <i class="bi bi-trash"></i>
+                                        </Render>
+                                    </Button>
+                                </td>
+                            </Rows>
+                        </ShowTable>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-light">
+                    <h2>اضافة مسمى ادوار البناء</h2>
+                    <div class="form-group text-right">
+                        <label>المسمى</label>
+                        <input type="text" class="form-control" @bind-value="Floor" placeholder="الدور" />
+                    </div>
+                     <div class="form-group text-right">
+                        <label>رقم الدور</label>
+                        <input type="number" class="form-control" @bind-value="numberFloor" placeholder="الدور" />
+                    </div>
+                    <div class="form-group text-right">
+                        <button type="button" class="btn btn-primary w-50" @onclick="AddFloor">اضافة</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 overflow-auto" style="max-height:450px">
+            <div class="card">
+                <div class="card-body">
+                    @if (floors != null)
+                    {
+                        <ShowTable itemtype="Floor" Class="table-light" Items="floors" TheadClass="thead-light">
+                            <Columns>
+                                <th>الاسم</th>
+                                <th>ِAction</th>
+                            </Columns>
+                            <Rows>
+                                <td>@context.NameFloor</td>
+                                <td>
+                                    <Button Class="btn-danger" T_type="int" TheValue="@context.Id">
+                                        <Render>
+                                            <i class="bi bi-trash"></i>
+                                        </Render>
+                                    </Button>
+                                </td>
+                            </Rows>
+                        </ShowTable>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-right">
+                    <h2>اضافة اوزران وقياسات</h2>
+                    <EditForm Model="weightadd" >
+                        <div class="form-group text-right">
+                            <label>اسم الوزن او المقياس</label>
+                            <InputText @bind-Value="weightadd.NameWeight" class="form-control"></InputText>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>تعريف الوحدة الصغرى</label>
+                            <InputSelect  @bind-Value="weightadd.IdWeightsmall" class="form-control"  >
+                                <option value="">---------------</option>
+                                @foreach (var w in Weghitsmall)
+                                {
+                                    <option value="@w.Id">@w.NameWeight</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        @if (weightadd.IdWeightsmall.HasValue)
+                        {
+                            <div class="form-group text-right">
+                                <label>كمية واحد من @weightadd.NameWeight تساوى عدد من @Weghitsmall.FirstOrDefault(x=>x.Id == weightadd.IdWeightsmall.Value).NameWeight</label>
+                                <InputNumber @bind-Value="weightadd.CountOfSmall" class="form-control"></InputNumber>
+                            </div>
+                        }
+                        <div class="form-group text-right mt-4">
+                            <button class="btn btn-primary w-50" @onclick="AddWeightsdb">اضافة المقياس</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+          <div class="col-md-6 overflow-auto" style="max-height:450px">
+            <div class="card">
+                <div class="card-body">
+                    @if (Weghitsmall.Count > 0)
+                    {
+                        <ShowTable itemtype="Weight" Class="table-light" Items="Weghitsmall" TheadClass="thead-light">
+                            <Columns>
+                                <th>المقياس</th>
+                                <th>ِAction</th>
+                            </Columns>
+                            <Rows>
+                                <td>
+                                    @context.NameWeight
+                                    @if(@context.Weightsmall != null)
+                                    {
+                                        <p>(@context.CountOfSmall )<span> - @context.Weightsmall.NameWeight</span></p>
+                                    }
+                                </td>
+                                <td>
+                                    <Button Class="btn-danger" T_type="int" TheValue="@context.Id">
+                                        <Render>
+                                            <i class="bi bi-trash"></i>
+                                        </Render>
+                                    </Button>
+                                </td>
+                            </Rows>
+                        </ShowTable>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+
+    IEnumerable<Category>? category = null;
+    IEnumerable<Floor>? floors = null;
+    List<Weight>? Weghitsmall = new List<Weight>();
+    Weight? weightadd = new Weight();
+    string Namecategory = "";
+    string Floor = "";
+    int numberFloor = 0;
+    protected override async Task OnInitializedAsync()
+    {
+        await GetAllCategory();
+        await Getfloors();
+        await GetSmall();
+    }
+
+    async Task Getfloors()
+    {
+        floors = await db.Floors.GetAllAsycnNoTracking();
+    }
+
+    async Task GetSmall()
+    {
+        Weghitsmall = await db.Weights.Include(w=>w.Weightsmall).AsNoTracking().ToListAsync();
+    }
+
+    async Task GetAllCategory()
+    {
+        category = await db.Categories.GetAllAsycnNoTracking();
+    }
+
+    async Task AddcategorysName()
+    {
+        if (!string.IsNullOrEmpty(Namecategory))
+        {
+            if (!await db.Categories.AnyAsync(x => x.CategoryName == Namecategory))
+            {
+                await db.Categories.AddAsync(new Category { CategoryName = Namecategory });
+                Namecategory = "";
+                await GetAllCategory();
+            }
+        }
+    }
+
+    async Task AddWeightsdb()
+    {
+        if (string.IsNullOrEmpty(weightadd.NameWeight))
+        {
+            toast.ShowError("اضف اسم الوحدة");
+        }
+        else if(weightadd.IdWeightsmall.HasValue && weightadd.CountOfSmall <= 0)
+        {
+            toast.ShowError("برجاء اضافة كمية الوحدة الصغرى");
+        }
+        else if(await db.Weights.AnyAsync(x=>x.NameWeight == weightadd.NameWeight))
+        {
+            toast.ShowError("هذا المقياس مضاف مسبقا");
+        }
+        else
+        {
+            await db.Weights.AddAsync(weightadd);
+            weightadd = new Weight();
+            await GetSmall();
+        }
+    }
+
+
+    async Task AddFloor()
+    {
+        if (!string.IsNullOrEmpty(Floor) && numberFloor > 0)
+        {
+            if (!await db.Floors.AnyAsync(x => x.NameFloor == Floor))
+            {
+                await db.Floors.AddAsync(new Floor { NameFloor = Floor ,Number = numberFloor });
+                Floor = "";
+                numberFloor = 0;
+                await Getfloors();
+            }
+        }
+    }
+
+}

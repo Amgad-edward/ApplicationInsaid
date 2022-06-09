@@ -1,0 +1,68 @@
+﻿
+
+@if (unit is not null && unit.Category != null && unit.Floor != null)
+{
+
+    <div class="col-md-@big m-1 animate__animated animate__fadeIn" style="cursor:pointer">
+
+        <div class="card @((unit.ISSoldDone ? "bg-success text-light":""))">
+            <div class="row justify-content-between" style="position:absolute;top:0;">
+                <div class="col-1 mt-1">
+                    <button type="button" @onclick="async ()=> await EditUnit.InvokeAsync(unit.Id)" class="btn btn-outline-light" data-toggle="modal" data-target="#editunit" >
+                         <i class="bi bi-pencil-square"></i>
+                    </button>
+                </div>
+                <div class="col-1 mt-1">
+                    <button type="button" @onclick="async ()=> await DeleteUnit.InvokeAsync(unit.Id)" class="btn btn-danger" data-toggle="modal" data-target="#deleteunit">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                @if (unit.ISSoldDone)
+                {
+                    <div class="mt-1">
+                        <button type="button" @onclick="async ()=> await DelelteResertvation.InvokeAsync(unit.Id)" class="btn btn-danger" data-toggle="modal" data-target="#deleteModelresetvation">
+                             <span>الغاء البيع</span>
+                        </button>
+                    </div>
+                }
+            </div>
+            <a href="/unitresertvation/@unit.Id" title="@(!unit.ISSoldDone? "بيع او حجز هذة الوحدة" : "هذة الوحدة مباعة اضغط لترى التفاصيل")">
+                <img src="@unit.MapImage.ShowImage()" class="card-img-top" alt="...">
+                <div class="card-body text-right">
+                    <h6>الدور :@unit.Floor.NameFloor &emsp; <span class="text-info">(@unit.Category.CategoryName)</span></h6>
+                    <p class="text-black-50">رقم :@unit.UnitNumber</p>
+                    <p>@unit.Description</p>
+                    <h5>مساحة : @unit.SpaceMater متر</h5>
+                    @if (unit.ISSoldDone)
+                    {
+                        <h4>محجوزة الى العميل : @unit.ReservationSale.ToCustomer.NameCustomer</h4>
+                    }
+                </div>
+            </a>
+        </div>
+    </div>
+}
+
+
+@code {
+
+
+
+    [Parameter]
+    public UnitProject unit { get; set; }
+
+    [Parameter]
+    public int big { get; set; } = 3;
+
+    [Parameter]
+    public EventCallback<int> DeleteUnit { get; set; }
+
+    [Parameter]
+    public EventCallback<int> EditUnit { get; set; }
+
+    [Parameter]
+    public EventCallback<int> DelelteResertvation { get; set; }
+
+
+
+}

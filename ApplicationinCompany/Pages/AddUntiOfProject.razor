@@ -1,0 +1,632 @@
+﻿@page "/addunintproject/{id:int}"
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject IToastService toast
+
+
+<div class="container rightdv">
+    <HeadPage NameArbic="واحدات مشروع" NameEnglish="Project Units"></HeadPage>
+    @if (_project is not null)
+    {
+        <div class="card animate__animated animate__fadeIn">
+            <div class="card-header text-right">
+                <div class="row justify-content-between">
+                    <div class="col-md-5"><h3>@_project.ProjectName</h3></div>
+                    <div>
+                        <button class="btn btn-outline-light text-dark" data-toggle="modal" data-target="#edit"><i class="bi bi-pencil-square"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <p>معلومات : @_project.ProjectInfo</p>
+                        @if (@_project.License != null)
+                        {
+                            <p> ترخيص : @_project.License</p>
+                        }
+                        <h6>عدد الوحدات : @_project.CountUnit وحدة</h6>
+                        <h6>مساحة الارض : @_project.TotalSapce (@_project.TotalSapce.ConvertNumberToText() متر)</h6>
+                        <h6>سعر متر الشراء : @_project.PriceMeter.ToMoney() للمتر ( <span>(@_project.PriceMeter.ConvertNumberToText())</span>)</h6>
+                        <h6>اجمالى سعر : @_project.TotalPrice.ToMoney() (@_project.TotalPrice.ConvertNumberToText())</h6>
+                        <h6 class="text-danger">سعر اجمالر مصروفات بناء : @_project.TotalCostPayment.ToMoney()</h6>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="row">
+                            @if (_project.ImageProject != null)
+                            {
+                                foreach (var photo in _project.ImageProject)
+                                {
+                                    <div class="col-4">
+                                        <img src="@photo.Image.ShowImage()" class="img-fluid w-100" />
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr />
+        <div class="card">
+            <div class="card-body text-right">
+                <h4>اضافة وحدة</h4>
+                <hr />
+                <EditForm Model="addunit">
+                    <div class="row justify-content-between">
+                        <div class="col-md-6">
+                            <div class="form-group text-right">
+                                @if (Floors is not null)
+                                {
+                                    <InputSelect @bind-Value="addunit.IdFloor" class="form-control">
+                                        <option value="0">---------------</option>
+                                        @foreach (var f in Floors)
+                                        {
+                                    <option value="@f.Id">@f.NameFloor</option>
+                                        }
+                            </InputSelect>
+                                }
+                                else
+                                {
+                                    <p class="text-danger">برجاء اضافة مسميات الادوار</p>
+                                }
+                            </div>
+                            @if (addunit.IdFloor > 0)
+                            {
+                                @if (Categories != null)
+                                {
+                                    <div class="form-group text-right">
+                                        <label>اختر تصنيف الوحدة</label>
+                                        <InputSelect @bind-Value="addunit.Idcategory" class="form-control">
+                                            @foreach (var c in Categories)
+                                            {
+                                    <option value="@c.Id">@c.CategoryName</option>
+                                            }
+                            </InputSelect>
+                        </div>
+                                }
+                                else
+                                {
+                                    <p>لا توجد تصنيفات مضافة</p>
+                                }
+                                <div class="form-group text-right">
+                                    <label>مساحة الوحدة بالمتر مربع</label>
+                                    <InputNumber @bind-Value="addunit.SpaceMater" class="form-control"></InputNumber>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>رقم الوحدة</label>
+                                    <InputText @bind-Value="addunit.UnitNumber" class="form-control"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>اضافة معلومات</label>
+                                    <InputTextArea @bind-Value="addunit.Description" class="form-control"></InputTextArea>
+                                </div>
+                                <div class="custom-file">
+                                    <InputFile OnChange="getMapImage" class="custom-file-input"></InputFile>
+                                    <label class="custom-file-label">صورة خريطة الوحدة</label>
+                                </div>
+
+                            }
+                            else
+                            {
+                                <p class="text-danger">هذا الارتفاع اكبر من عدد الادوار المسجلة بالمشروع</p>
+                            }
+
+                        </div>
+                        <div>
+                            @if (addunit.MapImage != null)
+                            {
+                                <img src="@addunit.MapImage.ShowImage()" class="img-thumbnail w-25" />
+                            }
+                        </div>
+                    </div>
+                </EditForm>
+                <div class="form-group text-right mt-3">
+                    <button type="button" class="btn btn-primary" @onclick="AddUbittodb">اضافة هذة الوحدة</button>
+                </div>
+            </div>
+        </div>
+
+        @if (_project.UnitProjects != null)
+        {
+            <div class="row justify-content-between">
+                <div class="col-md-4 mt-3">
+                    <input class="form-control" placeholder="Search" @oninput="Searching" @bind-value="Search" @bind-value:event="onkeyup" />
+                </div>
+                <div class="mt-2">
+                    <button class="btn btn-secondary" @onclick="Biglarg"><i class="bi bi-arrows-angle-expand"></i></button>
+                    <button class="btn btn-secondary ml-2" @onclick="BigSmaller"><i class="bi bi-arrows-angle-contract"></i></button>
+                </div>
+            </div>
+            <hr />
+            @if (AllUnits is not null)
+            {
+                <div class="row mb-5">
+                    @foreach (var unit in AllUnits)
+                    {
+                        <UnitCard DeleteUnit="Deleteing" DelelteResertvation="Deleteresertavtionunit" EditUnit="Edit" big="big" unit="unit"></UnitCard>
+                    }
+                </div>
+            }
+        }
+
+    }
+</div>
+
+<!-- Modal DelteUnit -->
+<div class="modal fade" id="deleteunit" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+                <button type="button" class="close" @onclick="undelete" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (unitdelete != null)
+            {
+                <div class="modal-body text-right">
+                    <p>هل تريد حذف هذة الوحدة @unitdelete.Floor.NameFloor @unitdelete.UnitNumber (@unitdelete.Category.CategoryName)</p>
+                    @if (unitdelete.ISSoldDone)
+                    {
+                        <h5 class="text-danger">احذر هناك عملية بيع او حجز لهذة الوحدة لصالح @unitdelete.ReservationSale.ToCustomer.NameCustomer , برجاء الغاء البيع اولا</h5>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="undelete" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="Delete" class="btn btn-danger">Delete</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit-->
+<div class="modal fade" id="editunit" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit Unit</h5>
+                <button type="button" class="close" @onclick="Notedit" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (unitedit != null)
+            {
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <EditForm Model="unitedit">
+                                <div class="row justify-content-between">
+                                    <div class="col-md-12">
+                                        <div class="form-group text-right">
+                                            @if (Floors is not null)
+                                            {
+                                                <InputSelect @bind-Value="unitedit.IdFloor" class="form-control">
+                                                    <option value="0">---------------</option>
+                                                    @foreach (var f in Floors)
+                                                    {
+                                                <option value="@f.Id">@f.NameFloor</option>
+                                                    }
+                                        </InputSelect>
+                                            }
+                                            else
+                                            {
+                                                <p class="text-danger">برجاء اضافة مسميات الادوار</p>
+                                            }
+                                        </div>
+                                        @if (unitedit.IdFloor > 0)
+                                        {
+                                            @if (Categories != null)
+                                            {
+                                                <div class="form-group text-right">
+                                                    <label>اختر تصنيف الوحدة</label>
+                                                    <InputSelect @bind-Value="unitedit.Idcategory" class="form-control">
+                                                        @foreach (var c in Categories)
+                                                        {
+                                                <option value="@c.Id">@c.CategoryName</option>
+                                                        }
+                                        </InputSelect>
+                                    </div>
+                                            }
+                                            else
+                                            {
+                                                <p>لا توجد تصنيفات مضافة</p>
+                                            }
+                                            <div class="form-group text-right">
+                                                <label>مساحة الوحدة بالمتر مربع</label>
+                                                <InputNumber @bind-Value="unitedit.SpaceMater" class="form-control"></InputNumber>
+                                            </div>
+                                            <div class="form-group text-right">
+                                                <label>رقم الوحدة</label>
+                                                <InputText @bind-Value="unitedit.UnitNumber" class="form-control"></InputText>
+                                            </div>
+                                            <div class="form-group text-right">
+                                                <label>اضافة معلومات</label>
+                                                <InputTextArea @bind-Value="unitedit.Description" class="form-control"></InputTextArea>
+                                            </div>
+                                            <div class="custom-file">
+                                                <InputFile OnChange="EditMapImage" class="custom-file-input"></InputFile>
+                                                <label class="custom-file-label">صورة خريطة الوحدة</label>
+                                            </div>
+
+                                        }
+                                        else
+                                        {
+                                            <p class="text-danger">هذا الارتفاع اكبر من عدد الادوار المسجلة بالمشروع</p>
+                                        }
+
+                                    </div>
+                                    <div>
+                                        @if (unitedit.MapImage != null)
+                                        {
+                                            <img src="@unitedit.MapImage.ShowImage()" class="img-thumbnail w-25" />
+                                        }
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="Notedit" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="SaveEditChange" class="btn btn-primary">Save changes</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal Resertavtion -->
+<div class="modal fade" id="deleteModelresetvation" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+                <button type="button" class="close" @onclick="undeleterese" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (Deleteresertvation != null)
+            {
+                <div class="modal-body text-right">
+                    <p class="text-danger">هل تريد حذف بيع هذة الوحدة لصالح العميل @Deleteresertvation.ToCustomer.NameCustomer بتاريخ @Deleteresertvation.DateSale.ToDate() </p>
+                    <div class="row">
+                        <div class="col-md-12 text-right">
+                            <h6>اجمالى الثمن : @Deleteresertvation.Total.ToMoney() (@Deleteresertvation.Total.ConvertNumberToText())</h6>
+                            <h6>اجمالى المدفوع : @Deleteresertvation.TotalPayment.ToMoney() (@Deleteresertvation.TotalPayment.ConvertNumberToText())</h6>
+                            <h6>اجمالى المتبقى : @Deleteresertvation.TotalRemaining.ToMoney() (@Deleteresertvation.TotalRemaining.ConvertNumberToText())</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="undeleterese" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="Deleterese" class="btn btn-danger">Yes delete</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal EditProject -->
+<div class="modal fade" id="edit" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit Project</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (_project is not null)
+            {
+                <EditForm Model="_project" OnValidSubmit="SaveEdite">
+                    <div class="modal-body text-right">
+                        <div class="row">
+                            <div class="col-md-12">
+
+                                <DataAnnotationsValidator></DataAnnotationsValidator>
+                                <div class="form-group text-right">
+                                    <label>اسم المشروع</label>
+                                    <InputText class="form-control" @bind-Value="_project.ProjectName"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>رقم الترخيص</label>
+                                    <InputText class="form-control" @bind-Value="_project.License"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>معلومات المشروع</label>
+                                    <InputTextArea class="form-control" @bind-Value="_project.ProjectInfo"></InputTextArea>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>عدد الادوار</label>
+                                    <InputNumber class="form-control" @bind-Value="_project.CountFloor"></InputNumber>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>مساحة الارض بالمتر</label>
+                                    <InputNumber class="form-control" @bind-Value="_project.TotalSapce"></InputNumber>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>اجمالى سعر الشراء</label>
+                                    <InputNumber class="form-control" @bind-Value="_project.TotalPrice"></InputNumber>
+                                    <span>(@_project.TotalPrice.ConvertNumberToText())</span>
+                                </div>
+                                <div class="custom-file text-right">
+                                    <InputFile OnChange="GetPhotos" multiple class="custom-file-input"></InputFile>
+                                    <label class="custom-file-label">Images</label>
+                                </div>
+
+
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    @if (_project.ImageProject != null)
+                                    {
+                                        @if (_project.ImageProject.Count > 0)
+                                        {
+                                            foreach (var photo in _project.ImageProject)
+                                            {
+                                                <div class="">
+                                                    <Button Class="close text-danger" eventBack="deletephoto" AddTitle="حذف هذة الصورة" T_type="ProjectImage" TheValue="photo">
+                                                        <Render>
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </Render>
+                                                    </Button>
+                                                    <img src="@photo.Image.ShowImage()" class="img-fluid" style="width:75px" />
+                                                </div>
+                                            }
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-success">Save changes</button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+    [Parameter]
+    public int id { get; set; }
+
+    [Inject]
+    public NavigationManager? nav { get; set; }
+
+    Project? _project = null;
+
+    UnitProject? addunit = new UnitProject();
+
+    UnitProject? unitdelete = null;
+    UnitProject? unitedit = null;
+    ResertvationAndSale? Deleteresertvation = null;
+
+    IEnumerable<Floor>? Floors = null;
+    IEnumerable<Category>? Categories = null;
+    IEnumerable<UnitProject>? AllUnits = null;
+
+    bool SaleUnit = false;
+    int big = 3;
+    string? Search = "";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        if (!log.ISAdmin)
+        {
+            nav.NavigateTo("");
+        }
+        await Getproject();
+        await GetFloors();
+        await Getcategorys();
+    }
+
+    async Task SaveEdite()
+    {
+        await db.SaveChangeAsync();
+        toast.ShowSuccess("تم حفظ التعديلات بنجاح");
+    }
+
+    async Task GetPhotos(InputFileChangeEventArgs e)
+    {
+        if (e.FileCount > 0)
+        {
+            foreach (var photo in e.GetMultipleFiles())
+            {
+                if (Hex.IsExtiotionImage(photo.Name))
+                {
+                    var stream = new MemoryStream();
+                    await photo.OpenReadStream(photo.Size).CopyToAsync(stream);
+                    if (_project.ImageProject == null)
+                        _project.ImageProject = new List<ProjectImage>();
+
+                    _project.ImageProject.Add(new ProjectImage { Image = stream.ToArray(), Idproject = _project.Id });
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+
+    void deletephoto(ProjectImage image)
+    {
+        _project.ImageProject.Remove(image);
+    }
+
+
+
+    void undelete()
+    {
+        unitdelete = null;
+    }
+
+    void Notedit()
+    {
+        unitedit = null;
+    }
+
+    void undeleterese()
+    {
+        Deleteresertvation = null;
+    }
+
+    async Task Deleteresertavtionunit(int id) //IDResertavtionUnit
+    {
+        Deleteresertvation = await db.ResertvationAndSales.Include(p => p.PaymentMoney)
+                             .Include(c => c.ToCustomer).AsNoTracking()
+                             .FirstOrDefaultAsync(x => x.IdUnit == id);
+    }
+
+    async Task Deleterese()
+    {
+        if (Deleteresertvation.PaymentMoney != null)
+        {
+            await db.PaymentMoneys.DeleteAsync(Deleteresertvation.PaymentMoney);
+        }
+        await db.ResertvationAndSales.DeleteAsync(Deleteresertvation.ID);
+        Deleteresertvation = null;
+        await Getproject();
+    }
+
+    void Deleteing(int id)
+    {
+        unitdelete = _project.UnitProjects.FirstOrDefault(x => x.Id == id);
+    }
+    void Edit(int id)
+    {
+        unitedit = _project.UnitProjects.FirstOrDefault(x => x.Id == id);
+    }
+
+    void Searching()
+    {
+        AllUnits = _project.UnitProjects.Where(x => x.Floor.NameFloor.Contains(Search) || x.Description.Contains(Search) || x.Category.CategoryName.Contains(Search));
+       // StateHasChanged();
+    }
+
+    async Task Delete()
+    {
+        if (!unitdelete.ISSoldDone)
+        {
+            await db.UnitProjects.DeleteAsync(unitdelete);
+            unitdelete = null;
+            await Getproject();
+        }
+        else
+        {
+            toast.ShowError("هناك عملية حجز اوبيع برجاء الغاء عملية البيع اولا");
+            unitdelete = null;
+        }
+
+    }
+
+    async Task SaveEditChange()
+    {
+        await db.SaveChangeAsync();
+        unitedit = null;
+    }
+
+    void Biglarg()
+    {
+        if (big < 12)
+        {
+            ++big;
+        }
+    }
+    void BigSmaller()
+    {
+        if (big > 1)
+        {
+            --big;
+        }
+    }
+
+
+
+    async Task Getproject()
+    {
+        _project = await db.Projects.Include(m => m.ImageProject)
+                         .Include(n => n.UnitProjects).ThenInclude(d => d.ReservationSale)
+                         .ThenInclude(c => c.ToCustomer)
+                         .Include(n => n.UnitProjects).ThenInclude(catg => catg.Category)
+                         .Include(n => n.UnitProjects).ThenInclude(f => f.Floor)
+                         .Include(a => a.BuildingCosts).ThenInclude(m => m.Material)
+                         .Include(a => a.BuildingCosts).ThenInclude(m => m.Maker)
+                         .FirstOrDefaultAsync(x => x.Id == id);
+        AllUnits = _project.UnitProjects;
+
+    }
+
+    async Task GetFloors()
+    {
+        Floors = await db.Floors.GetAllAsycnNoTracking();
+    }
+
+    async Task Getcategorys()
+    {
+        Categories = await db.Categories.GetAllAsycnNoTracking();
+    }
+
+
+    async Task getMapImage(InputFileChangeEventArgs e)
+    {
+        if (e.FileCount > 0)
+        {
+            if (Path.GetExtension(e.File.Name).IsExtiotionImage())
+            {
+                using (var stream = new MemoryStream())
+                {
+                    await e.File.OpenReadStream(e.File.Size).CopyToAsync(stream);
+                    addunit.MapImage = stream.ToArray();
+                }
+            }
+        }
+    }
+
+    async Task EditMapImage(InputFileChangeEventArgs e)
+    {
+        if (e.FileCount > 0)
+        {
+            if (Path.GetExtension(e.File.Name).IsExtiotionImage())
+            {
+                using (var stream = new MemoryStream())
+                {
+                    await e.File.OpenReadStream(e.File.Size).CopyToAsync(stream);
+                    unitedit.MapImage = stream.ToArray();
+                }
+            }
+        }
+    }
+
+    async Task AddUbittodb()
+    {
+        if (string.IsNullOrEmpty(addunit.UnitNumber))
+        {
+            toast.ShowError("برجاء ادخل رقم الوحدة");
+        }
+        else if (addunit.SpaceMater <= 0)
+        {
+            toast.ShowError("برجاء ادخل مساحة الوحدة بالمتر");
+        }
+        else
+        {
+            addunit.Guid = Guid.NewGuid().ToString();
+            addunit.IdProject = _project.Id;
+            _project.UnitProjects.Add(addunit);
+            await db.SaveChangeAsync();
+            addunit = new UnitProject();
+            await Getproject();
+        }
+    }
+
+
+}

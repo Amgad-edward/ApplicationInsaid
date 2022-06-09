@@ -1,0 +1,201 @@
+﻿@page "/addusers"
+@using System.ComponentModel.DataAnnotations
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject NavigationManager nav
+@inject IToastService toast
+
+
+<div class="container rightdv">
+    <HeadPage NameArbic="اضافة مستخدمين" NameEnglish="Add User Login"></HeadPage>
+    <EditForm Model="adduser" OnValidSubmit="Add">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <div class="row">
+            <div class="col-md-7">
+                <div class="form-group text-right">
+                    <label>اختر الموظف</label>
+                    <AutoCompeletEmplyee Callback="getidemplyee"></AutoCompeletEmplyee>
+                    <span class="text-success"><i class="@ISGOOd"></i></span>
+                </div>
+                <div class="form-group text-right">
+                    <label>اسم المستخدم</label>
+                    <InputText @bind-Value="adduser.userName" class="form-control"></InputText>
+                </div>
+                <div class="form-group text-right">
+                    <label>كلمة السر</label>
+                    <InputText @bind-Value="adduser.Password" class="form-control"></InputText>
+                </div>
+                <div class="form-group text-right">
+                    <label>اعد كلمة السر</label>
+                    <input type="text"  @bind-value="p"  class="form-control" />
+                    <span class="text-danger">@masseage</span>
+                </div>
+                <div class="mt-2 text-right">
+                    <InputCheckbox class="custom-checkbox" @bind-Value="adduser.ISAdmin"></InputCheckbox>
+                    <label class="custom-control-label">مدير</label>
+                </div>
+                <div class="form-group text-right mt-2">
+                    <button type="submit" class="btn btn-primary">اضافة</button>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+    <hr />
+    @if (UsersLogin is not null)
+    {
+        <ShowTable itemtype="LogAdmins" Items="UsersLogin" Class="table-light" TheadClass="thead-light">
+            <Columns>
+                <th>اسم الموظف</th>
+                <th>اسم المستخدم</th>
+                <th>كلمة السر</th>
+                <th>تعديل/حذف</th>
+            </Columns>
+            <Rows>
+                <td>@context.Emplyee.Name</td>
+                <td>@context.userName</td>
+                <td>@context.Password</td>
+                <td>
+                    <Button T_type="LogAdmins" ModalID="modaldelete" eventBack="getthisusersto" TheValue="context" AddTitle="حذف هذا المستخدم" Class="btn-danger">
+                        <Render>
+                            <i class="bi bi-trash"></i>
+                        </Render>
+                    </Button>
+                </td>
+
+            </Rows>
+        </ShowTable>
+    }
+</div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="modaldelete" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete User</h5>
+                <button type="button" class="close" @onclick="Nodelete" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (deleteing)
+            {
+                <div class="modal-body text-right">
+                    <h5>هل تريد حذف المستخدم @userlogEdit.Emplyee.Name ??</h5>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="Nodelete" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="DeletethisUser" class="btn btn-danger">Delete</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+
+    IEnumerable<LogAdmins>? UsersLogin = null;
+
+    LogAdmins? log = null;
+
+    LogAdmins? userlogEdit = new LogAdmins();
+    protected override async Task OnInitializedAsync()
+    {
+        log = await session.GetItemAsync<LogAdmins>("loguser");
+        if (!log.ISAdmin)
+        {
+            nav.NavigateTo("");
+        }
+        await GetAllUsers();
+    }
+
+    LogAdmins? adduser = new LogAdmins();
+
+
+    string? masseage = "";
+    string? p = "";
+    bool deleteing = false;
+    string? ISGOOd = "";
+    void Nodelete()
+    {
+        deleteing = false;
+        userlogEdit = new LogAdmins();
+    }
+
+    async Task GetAllUsers()
+    {
+        UsersLogin = await db.LogAdmins.Include(e => e.Emplyee).AsNoTracking().ToListAsync();
+    }
+    async Task Add()
+    {
+        if (adduser.IdEmplyee is null)
+        {
+            toast.ShowError("برجاء اعد اختيار الموظف");
+
+        }
+        else if (await db.LogAdmins.AnyAsync(x => x.userName == adduser.userName))
+        {
+            toast.ShowError("اسم المستخدم مضاف مسبقا برجاء تغيرة");
+        }
+        else if (p != adduser.Password)
+        {
+            toast.ShowError("كلمة السر غير متطابقة");
+        }
+        else if (adduser.Password.Length < 4)
+        {
+            toast.ShowError("يجب ان تكون كلمة السر اكثر من ثلاث احرف او ارقام");
+        }
+        else if(await db.LogAdmins.AnyAsync(x => x.IdEmplyee == adduser.IdEmplyee))
+        {
+            toast.ShowError("هذا الموظف مضاف له اسم مستخدم");
+        }
+        else
+        {
+            await db.LogAdmins.AddAsync(adduser);
+            adduser = new LogAdmins();
+            await GetAllUsers();
+
+        }
+    }
+
+    void getidemplyee(int id)
+    {
+        if (id > 0)
+        {
+            adduser.IdEmplyee = id;
+            ISGOOd = "bi bi-check2";
+        }
+        else
+        {
+             adduser.IdEmplyee = null;
+             ISGOOd = "bi bi-x-lg";
+        }
+       
+    }
+    void getthisusersto(LogAdmins user)
+    {
+        deleteing = true;
+        userlogEdit = user;
+    }
+
+    async Task DeletethisUser()
+    {
+        await db.LogAdmins.DeleteAsync(userlogEdit.Id);
+        deleteing = false;
+        userlogEdit = new LogAdmins();
+        await GetAllUsers();
+    }
+
+    void writepassword()
+    {
+        if (p == adduser.Password)
+            masseage = "كلمة المرور مطابقة";
+        else if (p != adduser.Password)
+            masseage = "كلمة المرور غير مطابقة";
+
+    }
+
+
+}

@@ -1,0 +1,43 @@
+﻿@if (taskCarry != null)
+{
+    <div class="col-md-4 animate__animated animate__fadeIn @Class">
+        <div class="card" style="width: 18rem;">
+            <div class="card-body text-right">
+                <h5 class="card-title">المطلوب</h5>
+                <h6 class="card-subtitle mb-2 text-muted">@taskCarry.date.ToDate()</h6>
+                <p class="card-text">@taskCarry.TheTask</p>
+                 <div class="form-group text-right">
+                     <label>النتيجة</label>
+                     <textarea  @bind="@taskCarry.Resulte" class="form-control" ></textarea>
+                 </div>
+                <button class="btn btn-primary" @onclick="DoneTask">تــم</button>
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@code {
+
+    [Parameter]
+    public TaskCarry? taskCarry { get; set; }
+
+    [Parameter]
+    public EventCallback Done { get; set; }
+
+    [Parameter]
+    public IUntiWork? DB { get; set; }
+
+    string Class = "";
+
+    async Task DoneTask()
+    {
+        taskCarry.DoneTask = true;
+        await DB.SaveChangeAsync();
+        Thread.Sleep(1500);
+        taskCarry = null;
+        await Done.InvokeAsync();
+      
+    }
+}

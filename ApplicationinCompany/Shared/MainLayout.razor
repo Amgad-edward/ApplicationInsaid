@@ -1,0 +1,381 @@
+﻿@inherits LayoutComponentBase
+@inject IUntiWork db
+@inject ISessionStorageService Session
+@inject IWebHostEnvironment env
+@inject NavigationManager nav
+
+
+<PageTitle>@Hex.Company?.NameCompanyEng Application</PageTitle>
+
+
+@if (DataBaseExsist)
+{
+    @if (Islogin && AcitveOrTry)
+    {
+        <div class="page">
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+
+            <main>
+                <nav class="navbar navbar-expand-lg fixed-top navbar-dark bg-dark">
+                    <img src="@log.Emplyee.Image.ShowImage()" style="width:35px;border-radius:50%" />
+                    <h6 class="text-light mt-2 ml-2">Hi,@log.Emplyee.Name.NameToEnglish()</h6>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        @if (isadmin)
+                        {
+                            <ul class="navbar-nav mr-auto">
+                                <li class="nav-item active">
+                                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#"></a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown_1" role="button" data-toggle="dropdown" aria-expanded="false">
+                                        Menu Control
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown_1">
+
+                                        <a class="dropdown-item" href="addproject"><i class="bi bi-building text-info"></i>&nbsp;&nbsp; Projects - (مشروعات عقارية)</a>
+                                        <a class="dropdown-item" href="addunitfinish"><i class="bi bi-house  text-info"></i>&nbsp;&nbsp;Unit Finish - (واحدات تشطيب)</a>
+                                        <a class="dropdown-item" href="addemplyee"><i class="icofont-male text-info"></i>&nbsp;&nbsp;Employees - (موظفين)</a>
+                                        <a class="dropdown-item" href="addusers"><i class="icofont-user text-info"></i>&nbsp;&nbsp;Add user Login</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="companysadding"><i class="icofont-company text-info"></i>&nbsp;&nbsp;Add Companys - (تسجيل شركات)</a>
+                                        <a class="dropdown-item" href="backups"><i class="icofont-database text-info"></i>&nbsp;&nbsp;Backup - (نسخة احتياطية)</a>
+                                        <div class="dropdown-divider"></div>
+                                         <a class="dropdown-item" href="accountmoves"><i class="icofont-math text-info"></i>&nbsp;&nbsp;Account Move - (الحسابات)</a>
+                                    </div>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown_2" role="button" data-toggle="dropdown" aria-expanded="false">
+                                        Menu Information
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown_2">
+                                        <a class="dropdown-item" href="addmaterails">Materails(اضافة خامات)</a>
+                                        <a class="dropdown-item" href="addcats">Add category(اضافة تصنيفات)</a>
+                                        <a class="dropdown-item" href="paymentcustomers">Payments (سداد مبلغ مستحقة)</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="#">-------</a>
+                                    </div>
+                                </li>
+
+                            </ul>
+                        }
+                        else if (log.Emplyee.TheJop == Jop.DataEntry)
+                        {
+                            <ul class="navbar-nav mr-auto">
+                                <li class="nav-item active">
+                                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">Link</a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-expanded="false">
+                                        Menu
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                        <a class="dropdown-item" href="addmaterails">Materails(اضافة خامات)</a>
+                                        <a class="dropdown-item" href="addemplyee">Add Employee</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="paymentcustomers">Payments (سداد مبلغ مستحقة)</a>
+                                    </div>
+                                </li>
+
+                            </ul>
+                        }
+                        else
+                        {
+                            <ul class="navbar-nav mr-auto">
+                                <li class="nav-item active">
+                                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">Link</a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-expanded="false">
+                                        Menu
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                        <a class="dropdown-item" href="addmaterails">Materails(اضافة خامات)</a>
+                                        <a class="dropdown-item" href="">Add Employee</a>
+                                        <a class="dropdown-item" href="">Add user Login</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="#">Something else here</a>
+                                    </div>
+                                </li>
+
+                            </ul>
+                        }
+                        <button type="button" class="btn btn-dark" @onclick="logouts">Logout <span class="icofont-logout"></span></button>
+                    </div>
+                </nav>
+                <article class="content px-4">
+                    @Body
+                </article>
+            </main>
+        </div>
+        <BlazoredToasts Position="ToastPosition.BottomRight"
+                Timeout="10"
+                IconType="IconType.FontAwesome"
+                SuccessClass="success-toast-override" />
+    }
+    else
+    {
+        @if (AcitveOrTry)
+        {
+            <div class="container">
+                <h1 class="text-center display-4" style="margin-top:131px">
+                    <span class="text-info">Welcome</span> To Application
+                    @if (Hex.ISActive)
+                    {
+                        <span class="badge badge-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-info">Try</span>
+                    }
+                </h1>
+                <hr />
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div class="row">
+                            @if (!FirstOpen)
+                            {
+                                <div class="col-md-6">
+                                    <div class="w-75">
+                                        <h3 class="text-center">Log in <span class="icofont-login text-info"></span></h3>
+                                        <div class="form-group">
+                                            <label>User Name</label>
+                                            <input type="text" @bind-value="@userName" class="form-control" placeholder="User Name" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Password</label>
+                                            <input type="password" @bind-value="@Password" class="form-control" />
+                                        </div>
+                                        <button class="btn btn-primary" @onclick="Logins">login</button> &nbsp;
+                                        <p class="text-black-50">@Message</p>
+                                        @if (lodding)
+                                        {
+                                            <h6>جارةى التحميل</h6>
+                                            <div class="spinner-border text-secondary" role="status">
+                                                <span class="sr-only"></span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                            }
+                            else
+                            {
+                                <div class="col-md-6">
+                                    <h2>First Application</h2>
+                                    <a class="btn btn-primary w-50" href="/firstappget">Enter To Regsiter</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="container">
+                <h1 class="text-center display-4" style="margin-top:131px">
+                    <span class="text-info">Welcome</span> To Application <span class="badge badge-danger">Not Active</span>
+                </h1>
+            </div>
+        }
+
+    }
+}
+else
+{
+    <div class="container" style="margin-top:200px">
+        <div class="card">
+            <div class="card-body bg-info text-light text-center">
+                <h5>Please Wait To Lodding Data...</h5>
+                <div class="spinner-border text-light" role="status">
+                    <span class="sr-only"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@code {
+
+    private bool AcitveOrTry => Hex.ISActive || GetTry();
+
+    bool DataBaseExsist;
+
+    bool Islogin = false;
+    LogAdmins? log = new LogAdmins();
+    string? userName = "";
+    string? Password = "";
+    string? Message = "";
+    bool isadmin = false;
+    bool lodding = false;
+    string ImageEmplyee = "";
+    string? Pathfile_ = "";
+    bool FirstOpen = false;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (AcitveOrTry)
+        {
+            if (firstRender)
+            {
+                if (await db.CreateDatabaseAsync())
+                {
+
+                    var l = new LogAdmins
+                        {
+                            ISAdmin = true,
+                            userName = "test",
+                            Emplyee = new Emplyee
+                            {
+                                Name = "test",
+                                StartWork = DateOnly.FromDateTime(DateTime.Now),
+                                DateBirth = DateTime.Now,
+                                StartTimeWork = TimeOnly.MinValue,
+                                EndTimeWork = TimeOnly.MinValue,
+                                GideID = "",
+                                TheJop = Jop.None,
+                                TitleJop = "",
+                                type = TypeSalery.None,
+                                WeekEnd = DayOfWeek.Friday,
+                                saleryPayments = new List<SaleryPayment>(),
+                                AllSalesFormThisEmplyee = new List<ResertvationAndSale>()
+
+                            }
+                        };
+                    await Session.SetItemAsync<LogAdmins?>("loguser", l);
+                    DataBaseExsist = true;
+                    FirstOpen = true;
+                    StateHasChanged();
+                    return;
+                }
+                if (db.Companys.Any() && Hex.Company.NameCompany == null)
+                {
+                    Hex.Company = db.Companys.GetAll().FirstOrDefault();
+                }
+
+            }
+            Islogin = await Session.ContainKeyAsync("loguser");
+            if (Islogin)
+            {
+                log = await Session.GetItemAsync<LogAdmins>("loguser");
+                isadmin = log.ISAdmin;
+            }
+        }
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        DataBaseExsist = await db.DataBaseExsist();
+        if (Islogin)
+        {
+            log = await Session.GetItemAsync<LogAdmins>("loguser");
+            isadmin = log.ISAdmin;
+        }
+
+        Pathfile_ = Path.Combine(env.WebRootPath, @"bootstrap-icons\font\fonts", "root");
+
+    }
+
+    private bool GetTry()
+    {
+
+        var fileInfo = new System.IO.FileInfo(Pathfile_);
+        if (fileInfo.Exists)
+        {
+            using (var filewrite = new FileStream(Pathfile_, FileMode.Open, FileAccess.ReadWrite))
+            {
+                var read = new StreamReader(filewrite);
+                if (int.TryParse(read.ReadToEnd(), out int Number))
+                {
+                    ++Number;
+                    read.Close();
+                    if (Number > Hex.Max)
+                    {
+                        fileInfo.Delete();
+                    }
+                    else
+                    {
+                        try
+                        {
+                            var binary = new StreamWriter(Pathfile_);
+                            binary.Write(Number.ToString());
+                            binary.Close();
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                        return Number <= Hex.Max;
+                    }
+                }
+               
+            }
+
+        }
+
+        return false;
+    }
+
+    async Task Logins()
+    {
+        if (userName != "" && Password != "")
+        {
+            lodding = true;
+            if (await db.LogAdmins.AnyAsync(x => x.userName == userName && x.Password == Password))
+            {
+                var model = await db.LogAdmins
+                             .Include(s => s.Emplyee).ThenInclude(q => q.AllSaleToFinishUnit).ThenInclude(c => c.Customer)
+                             .Include(salry => salry.Emplyee).ThenInclude(sa => sa.saleryPayments)
+                             .Include(a=>a.Emplyee.AllSalesFormThisEmplyee).ThenInclude(u=>u.Unit).ThenInclude(p=>p.Project)
+                             .Include(a=>a.Emplyee.AllSalesFormThisEmplyee).ThenInclude(u=>u.Unit).ThenInclude(p=>p.Category)
+                             .Include(a=>a.Emplyee.AllSalesFormThisEmplyee).ThenInclude(u=>u.Unit).ThenInclude(p=>p.Floor)
+                             .AsNoTracking().FirstOrDefaultAsync(x => x.userName == userName && x.Password == Password);
+
+                await Session.SetItemAsync<LogAdmins>("loguser", model);
+                log = await Session.GetItemAsync<LogAdmins>("loguser");
+                Islogin = true;
+                isadmin = model.ISAdmin;
+
+            }
+            else
+            {
+                Message = "اسم المستخدم او كلمة السر غير صحيحة";
+                Islogin = false;
+            }
+            lodding = false;
+        }
+        else
+        {
+            Message = "ادخل اسم المستخدم وكلمة السر";
+        }
+    }
+
+
+    async void logouts()
+    {
+        await Session.RemoveItemAsync("loguser");
+        log = new LogAdmins();
+        Islogin = false;
+        isadmin = false;
+        nav.NavigateTo("");
+    }
+
+}

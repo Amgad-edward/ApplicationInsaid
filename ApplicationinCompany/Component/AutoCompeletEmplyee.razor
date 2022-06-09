@@ -1,0 +1,38 @@
+﻿@inject IUntiWork db
+
+@if(Emplyee != null)
+{
+    <BlazoredTypeahead  @bind-Value="emplyee" @onselectionchange="async ()=> await Callback.InvokeAsync(emplyee.Id)" SearchMethod="AutoComplete">
+    <SelectedTemplate>
+        @context.Name
+    </SelectedTemplate>
+    <ResultTemplate>
+        @context.Name &ensp; <span class="text-black-50">@context.TheJop</span>
+    </ResultTemplate>
+</BlazoredTypeahead>
+}
+
+
+
+
+@code {
+
+    [Parameter]
+    public EventCallback<int> Callback { get; set; }
+
+    List<Emplyee>? Emplyee = new List<Emplyee>();
+    Emplyee emplyee = new Emplyee();
+    protected override async Task OnInitializedAsync()
+    {
+
+        var emp = await db.Emplyees.GetAllAsycnNoTracking();
+        Emplyee = emp.ToList();
+    }
+
+
+    private async Task<IEnumerable<Emplyee>> AutoComplete(string text)
+    {
+        return await Task.FromResult(Emplyee.Where(x => x.Name.ToLower().Contains(text)));
+    }
+
+}

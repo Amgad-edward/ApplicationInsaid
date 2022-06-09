@@ -1,0 +1,60 @@
+﻿
+
+<BlazoredTypeahead @bind-Value="resulte" @onselectionchange="async ()=> await eventCallback.InvokeAsync(resulte)" SearchMethod="AutoCompelet">
+   <SelectedTemplate>
+        @context.NameResulte
+    </SelectedTemplate>
+    <ResultTemplate>
+       <span class="text-black-50">@context.SearchName</span>
+    </ResultTemplate>
+   
+</BlazoredTypeahead>
+
+
+
+@code {
+
+    [Parameter]
+    public IUntiWork? DB { get; set; }
+
+    [Parameter]
+    public EventCallback<CollectionsPayment> eventCallback { get; set; }
+
+    List<CollectionsPayment>? collections = new List<CollectionsPayment>();
+
+    CollectionsPayment? resulte = new CollectionsPayment();
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GET();
+    }
+
+    async Task GET()
+    {
+        var GetUnitBuilding = await DB.ResertvationAndSales.Include(x => x.ToCustomer)
+                                .Include(m => m.PaymentMoney).Include(unit => unit.Unit).ThenInclude(p => p.Project)
+                                .Include(u=>u.Unit).ThenInclude(ca=>ca.Category)
+                                .Include(u=>u.Unit).ThenInclude(ca=>ca.Floor)
+                                .ToListAsync();
+
+        var GetFinish = await DB.FinishesUnits.Include(x => x.PaymentMoney).Include(c => c.Customer)
+                              .ToListAsync();
+
+
+        foreach (var item in GetUnitBuilding.Where(x => x.TotalRemaining > 0))
+            collections.Add(item);
+
+        foreach (var item in GetFinish.Where(x => x.TotalRemaining > 0))
+            collections.Add(item);
+
+          
+
+    }
+
+    async Task<IEnumerable<CollectionsPayment>> AutoCompelet(string text)
+    {
+        return await Task.FromResult<IEnumerable<CollectionsPayment>>(collections.Where(x=>x.Resertvation !=null ? x.Resertvation.ToCustomer.NameCustomer.Contains(text):false | x.FinishesUnit != null ? x.FinishesUnit.Customer.NameCustomer.Contains(text) : false));
+    }
+}

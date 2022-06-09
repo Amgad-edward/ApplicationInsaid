@@ -1,0 +1,132 @@
+﻿@page "/backups"
+@inject IUntiWork db
+@using MySql.Data.MySqlClient
+@inject IToastService toast
+@inject ISessionStorageService session
+@inject IJSRuntime js
+
+
+<div class="container rightdv">
+    <HeadPage NameArbic="نسخة بيانات" NameEnglish="Data Backup"></HeadPage>
+    <div class="row">
+        @if (YesdownData)
+        {
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body text-right">
+                        <h2>تحميل نسخة بيانات</h2>
+                        <button class="btn btn-primary w-100" @onclick="DownloadFilesql">اخذ نسخة بيانات</button>
+                    </div>
+                </div>
+            </div>
+        }
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body text-right">
+                    <h2>رفع نسخة بيانات</h2>
+                    <div class="custom-file">
+                        <InputFile class="custom-file-input" OnChange="UploadDataBackup"></InputFile>
+                        <label class="custom-file-label">File Backup</label>
+                    </div>
+                    @if (Upload)
+                    {
+                        <h4>جارى رقع البيانات</h4>
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="sr-only"></span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+
+    bool Upload = false;
+
+
+    [Inject]
+    public NavigationManager nav { get; set; }
+
+    [Parameter]
+    public bool YesdownData { get; set; } = true;
+
+    [Parameter]
+    public EventCallback eventCallback { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        if (!log.ISAdmin)
+        {
+            nav.NavigateTo("");
+        }
+    }
+
+
+    private async Task DownloadFilesql()
+    {
+        using (var connect = new MySqlConnection(Hex.Connections))
+        {
+            using (var Commant = new MySqlCommand("", connect))
+            {
+                using (var backup = new MySqlBackup(Commant))
+                {
+
+                    var stream = new MemoryStream();
+                    await connect.OpenAsync();
+                    backup.ExportToMemoryStream(stream);
+                    await connect.CloseAsync();
+                    await js.InvokeVoidAsync("SaveFileSql", $"backup_{DateTime.Now.Year}_{DateTime.Now.Month}_{DateTime.Now.Day}_{DateTime.Now.Hour}_{DateTime.Now.Minute}_{DateTime.Now.Second}_.sql", Convert.ToBase64String(stream.ToArray()));
+                }
+            }
+        }
+    }
+
+
+
+    private async Task UploadDataBackup(InputFileChangeEventArgs e)
+    {
+        if (e.FileCount > 0)
+        {
+            var type = Path.GetExtension(e.File.Name);
+            if (type == ".sql")
+            {
+                Upload = true;
+                var stream = new MemoryStream();
+                await e.File.OpenReadStream(e.File.Size).CopyToAsync(stream);
+                using (var Connect = new MySqlConnection(Hex.Connections))
+                {
+                    using (var Cmd = new MySqlCommand("", Connect))
+                    {
+                        using (var backup = new MySqlBackup(Cmd))
+                        {
+
+                            await Connect.OpenAsync();
+                            backup.ImportFromMemoryStream(stream);
+                            await Connect.CloseAsync();
+                            toast.ShowInfo("تم رفع النسخة البيانات");
+                            Upload = false;
+                            await eventCallback.InvokeAsync();
+                        }
+                    }
+                }
+            }
+            else
+            {
+                toast.ShowWarning("الملف المدخل غير صحيح");
+            }
+        }
+    }
+
+
+
+
+
+
+
+}

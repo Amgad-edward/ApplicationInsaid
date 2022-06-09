@@ -1,0 +1,550 @@
+﻿@page "/unitresertvation/{id:int}"
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject IToastService toast
+
+
+<div class="container rightdv">
+    <HeadPage NameArbic="بيع وحجز وحدة" NameEnglish="Sale Unit"></HeadPage>
+
+    @if (resertvation is not null)
+    {
+        @if (EditResertvation)
+        {
+            <div class="card">
+                <div class="card-body">
+                    <div class="row justify-content-between">
+                        <div class="col-md-5">
+                            @if(resertvation.ToCustomer != null)
+                            {
+                                <h2>اسم المشترى :@resertvation.ToCustomer?.NameCustomer</h2>
+                            }
+                        </div>
+                        <div class="text-right">
+                            <h6 class="text-black-50">@resertvation.DateSale.ToDate()</h6>
+                        </div>
+                    </div>
+                    <div class="row text-right">
+                        <div class="col-md-7 text-right">
+                            <h6>معلومات الوحدة</h6>
+                            <p>@Unit.Project.ProjectName - @Unit.Category.CategoryName - @Unit.Floor.NameFloor</p>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <p>وحدة رقم :@Unit.UnitNumber</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 text-right">
+                            <h5>اجمالى المبلغ : @resertvation.Total.ToMoney() (@resertvation.Total.ConvertNumberToText())</h5>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <h5>اجمالى المسدد : @resertvation.TotalPayment.ToMoney() (@resertvation.TotalPayment.ConvertNumberToText())</h5>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <h5 class="text-danger">اجمالى المتبقى : @resertvation.TotalRemaining.ToMoney() (@resertvation.TotalRemaining.ConvertNumberToText())</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        <EditForm Model="resertvation">
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="form-group text-right">
+                        <label>اسم العميل</label>
+                        <AutoCompeletCustomers GetEventCallback="getidcustomer"></AutoCompeletCustomers>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group text-right">
+                        <label>اجمالى السعر البيع</label>
+                        <InputNumber @bind-Value="resertvation.TotalPriceBuy" class="form-control"></InputNumber>
+                    </div>
+                    <div class="form-group text-right">
+                        <label>اضافة مصروفات اخرى</label>
+                        <InputNumber @bind-Value="resertvation.PriceAdding" class="form-control"></InputNumber>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h5>فقط : @resertvation.TotalPriceBuy.ConvertNumberToText() جنية</h5>
+                    <h5>
+                        اجمالى المكسب : @resertvation.ProfitThisUnit.ToMoney() (@resertvation.ProfitThisUnit.ConvertNumberToText())
+                        @if(resertvation.ProfitThisUnit <= 0)
+                        {
+                            <span class="text-danger">هناك خسارة بقدارة @((resertvation.ProfitThisUnit * -1).ToMoney())</span>
+                        }
+                    </h5>
+                    <h5>اجمالى المدفوع : @resertvation.ManeyPayNow.ToMoney()<span>(فقط @resertvation.ManeyPayNow.ConvertNumberToText())</span></h5>
+                    <h5 class="text-danger">اجمالى المتبقى : @resertvation.TheRemaining.ToMoney() <span class="text-secondary">(فقط @resertvation.TheRemaining.ConvertNumberToText())</span></h5>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="form-group text-right">
+                        <label>تم البيع عن طريق الموظف</label>
+                        <AutoCompeletEmplyee Callback="getemplyee"></AutoCompeletEmplyee>
+                    </div>
+                    <div class="form-group text-right">
+                        <label>تاريخ الحجز اوز البيع</label>
+                        <InputDate @bind-Value="resertvation.DateSale" class="form-control"></InputDate>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group text-right">
+                        <label>اختر نظام السداد</label>
+                        <InputSelect @bind-Value="resertvation.systemPayments" class="form-control">
+                            @foreach (SystemPayment item in Enum.GetValues(typeof(SystemPayment)))
+                            {
+                               <option value="@item">@item.ShowDiscruotionEnum()</option>
+                            }
+                    </InputSelect>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-2">
+
+            @if (resertvation.systemPayments != SystemPayment.None)
+                {
+                    if (resertvation.systemPayments == SystemPayment.Installments)
+                    {
+                        <div class="col-md-3">
+                            <div class="form-group text-right">
+                                <label>المقدم المدفوع</label>
+                                <InputNumber @bind-Value="resertvation.ManeyPayNow" class="form-control"></InputNumber>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group text-right">
+                                <label>طريقة الدفع</label>
+                                <InputSelect @bind-Value="resertvation.PaymentOf" class="form-control">
+                                    @foreach (CashPayment item in Enum.GetValues(typeof(CashPayment)))
+                                    {
+                                   <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                    }
+                    </InputSelect>
+                </div>
+            </div>
+                        @if (resertvation.PaymentOf == CashPayment.Sheek || resertvation.PaymentOf == CashPayment.Visa)
+                        {
+                            <div class="col-md-3">
+                                <div class="form-group text-right">
+                                    <label>@(resertvation.PaymentOf == CashPayment.Sheek ? "رقم الشيك" : "رقم العملية")</label>
+                                    <InputText @bind-Value="resertvation.PrccessNumberSheekorvisa" class="form-control"></InputText>
+                                </div>
+                            </div>
+                        }
+                        <div class="col-md-2">
+                            <div class="form-group text-right">
+                                <label>مدة القسط بالشهر</label>
+                                <InputNumber @bind-Value="resertvation.SpanMonthLenght" class="form-control"></InputNumber>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-group text-right">
+                                <label>عدد الاقساط</label>
+                                <InputNumber @bind-Value="resertvation.CountInstallment" class="form-control"></InputNumber>
+                            </div>
+                        </div>
+                    }
+                    else if (resertvation.systemPayments == SystemPayment.Reservation)
+                    {
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label>الدفعة المدفوعة</label>
+                                <InputNumber @bind-Value="resertvation.ManeyPayNow" class="form-control"></InputNumber>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group text-right">
+                                <label>طريقة الدفع</label>
+                                <InputSelect @bind-Value="resertvation.PaymentOf" class="form-control">
+                                    @foreach (CashPayment item in Enum.GetValues(typeof(CashPayment)))
+                                    {
+                            <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                    }
+                    </InputSelect>
+                </div>
+            </div>
+                        @if (resertvation.PaymentOf == CashPayment.Sheek || resertvation.PaymentOf == CashPayment.Visa)
+                        {
+                            <div class="col-md-3">
+                                <div class="form-group text-right">
+                                    <label>@(resertvation.PaymentOf == CashPayment.Sheek ? "رقم الشيك" : "رقم العملية")</label>
+                                    <InputText @bind-Value="resertvation.PrccessNumberSheekorvisa" class="form-control"></InputText>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else if (resertvation.systemPayments == SystemPayment.Cash)
+                    {
+                        resertvation.ManeyPayNow = resertvation.Total;
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label>المبلغ المدفوع</label>
+                                <InputNumber @bind-Value="resertvation.ManeyPayNow" class="form-control"></InputNumber>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group text-right">
+                                <label>طريقة الدفع</label>
+                                <InputSelect @bind-Value="resertvation.PaymentOf" class="form-control">
+                                    @foreach (CashPayment item in Enum.GetValues(typeof(CashPayment)))
+                                    {
+                            <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                    }
+                    </InputSelect>
+                </div>
+            </div>
+                        @if (resertvation.PaymentOf == CashPayment.Sheek || resertvation.PaymentOf == CashPayment.Visa)
+                        {
+                            <div class="col-md-3">
+                                <div class="form-group text-right">
+                                    <label>@(resertvation.PaymentOf == CashPayment.Sheek ? "رقم الشيك" : "رقم العملية")</label>
+                                    <InputText @bind-Value="resertvation.PrccessNumberSheekorvisa" class="form-control"></InputText>
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+
+
+        </EditForm>
+        <div class="form-group text-right mb-5 mt-3">
+            <button class="btn btn-success w-25" @onclick="SaleSaved">@(EditResertvation ? "حفظ التعديلات" : "تــم البيع")</button>
+        </div>
+        @if (resertvation.CountInstallment > 0 && resertvation.SpanMonthLenght > 0 && resertvation.systemPayments == SystemPayment.Installments)
+        {
+            <hr />
+            <div class="text-right">
+                <h4>جدول الاقساط</h4>
+            </div>
+            <ShowTable Class="table-light" itemtype="PaymentMoney" Items="resertvation.GetTablePayments" TheadClass="thead-dark">
+                <Columns>
+                    <th>تاريخ الدفع</th>
+                    <th>المبلغ</th>
+                </Columns>
+                <Rows>
+                    <td>@context.DatePayment.Todate()</td>
+                    <td>
+                        <span>@context.Money.ToMoney()</span>
+                        <p>(@context.Money.ConvertNumberToText())</p>
+                    </td>
+                </Rows>
+            </ShowTable>
+        }
+        if (EditResertvation)
+        {
+            @if (resertvation.PaymentMoney != null)
+            {
+                <hr />
+                <div class="mt-2 text-right">
+                    <h3>جدول الحساب</h3>
+                    <ShowTable itemtype="PaymentMoney" Items="resertvation.PaymentMoney" Class="table-light" TheadClass="thead-light">
+                        <Columns>
+                            <th>تاريخ</th>
+                            <th>المبلغ</th>
+                            <th>حالة السداد</th>
+                            <th>سدداد عن طريق</th>
+                            <th>Action</th>
+                        </Columns>
+                        <Rows>
+                            <td>@context.DatePayment.Todate()</td>
+                            <td>
+                                @context.Money.ToMoney()
+                                <p>(فقط @context.Money.ConvertNumberToText() جنية)</p>
+                            </td>
+                            <td>
+                                <p class="@(context.DonePayment ?"text-success" :"text-danger")">@(context.DonePayment ? "مسدد": "غير مسدد")</p>
+                            </td>
+                            <td>
+                                <p>@context.Paymentis.ShowDiscruotionEnum() - @context.CashPayment.ShowDiscruotionEnum()</p>
+                                @if (context.CashPayment == CashPayment.Sheek || context.CashPayment == CashPayment.Visa)
+                                {
+                                    <p class="text-success">رقم العملية : @context.NumberPaymentProcess</p>
+                                }
+                            </td>
+                            <td>
+                                <Button Class="btn-danger" AddTitle="حذف هذا الحساب" T_type="int" ModalID="deletepayment" eventBack="GetIDDeletePayment" TheValue="context.ID">
+                                    <Render>
+                                        <i class="bi bi-trash"></i>
+                                    </Render>
+                                </Button>
+                                <Button Class="btn-outline-light text-dark" AddTitle="تعديل هذا الحساب" T_type="int" ModalID="Editpayment" eventBack="GetIDEditPayment" TheValue="context.ID">
+                                    <Render>
+                                        <i class="bi bi-pencil-square"></i>
+                                    </Render>
+                                </Button>
+                            </td>
+                        </Rows>
+                    </ShowTable>
+                </div>
+            }
+        }
+
+    }
+</div>
+
+<!-- Modal DeletePayment -->
+<div class="modal fade" id="deletepayment" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+                <button type="button" @onclick="NotDelete" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (ShowdeletePayment)
+            {
+                <div class="modal-body text-right">
+                    <h5 class="text-danger">احذر سوف تقوم بحذف حساب من حساب هذا الوحدة, هل تريد الحذف؟</h5>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="NotDelete" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="Delete" class="btn btn-danger">Yes Delete</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal EditPayment -->
+<div class="modal fade" id="Editpayment" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit Payment</h5>
+                <button type="button" @onclick="NotEdit" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (ShoweditPayment)
+            {
+                <div class="modal-body text-right">
+                    <div class="row">
+                        <div class="col-md-10">
+                            <div class="form-group text-right">
+                                <label>المبلغ</label>
+                                <input type="number" @bind-value="editpayment.Money" class="form-control" />
+                                <span>@editpayment.Money.ConvertNumberToText()</span>
+                            </div>
+                            <div class="form-group text-right">
+                                <label>تاريخ</label>
+                                <input type="date" @bind-value="editpayment.DatePayment" class="form-control" />
+                            </div>
+                            <div class="form-group text-right">
+                                <label>مبلغ تحت</label>
+                                <select @bind="editpayment.Paymentis" class="form-control">
+                                    @foreach (PaymentIs item in Enum.GetValues(typeof(PaymentIs)))
+                                    {
+                                        <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-group text-right">
+                                <label>دفع عن طريق</label>
+                                <select @bind="editpayment.CashPayment" class="form-control">
+                                    @foreach (CashPayment item in Enum.GetValues(typeof(CashPayment)))
+                                    {
+                                        <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                    }
+                                </select>
+                            </div>
+                            @if (editpayment.CashPayment == CashPayment.Sheek || editpayment.CashPayment == CashPayment.Visa)
+                            {
+                                <div class="form-group text-right">
+                                    <label>ادخل رقم العملية او الشيك</label>
+                                    <input type="text" @bind-value="editpayment.SheekBank" class="form-control" />
+                                </div>
+                            }
+                            <div class="text-right">
+                                <input type="checkbox" @bind-value="editpayment.DonePayment" class="" />
+                                <label>تم السداد</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="NotEdit" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="DoneSavedEdit" class="btn btn-success">Save Change</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+    [Inject]
+    public NavigationManager? nav { get; set; }
+
+    [Parameter]
+    public int id { get; set; } //IdUnit
+
+    ResertvationAndSale? resertvation = new ResertvationAndSale();
+
+    UnitProject? Unit = new UnitProject();
+
+    List<PaymentMoney> payments = new List<PaymentMoney>();
+
+    int IdCustomer;
+    int? IDEmplyee;
+    bool EditResertvation = false;
+
+    int IDPayment;
+    bool ShowdeletePayment = false;
+    bool ShoweditPayment = false;
+    PaymentMoney? editpayment = null;
+
+    void getidcustomer(int id)
+    {
+        IdCustomer = id;
+    }
+
+
+    void GetIDDeletePayment(int id) //IDPayment
+    {
+        IDPayment = id;
+        ShowdeletePayment = true;
+    }
+    void GetIDEditPayment(int id)//IDPayment
+    {
+        editpayment = resertvation.PaymentMoney.FirstOrDefault(x => x.ID == id);
+        ShoweditPayment = true;
+    }
+
+    void NotDelete()
+    {
+        IDPayment = 0;
+        ShowdeletePayment = false;
+    }
+
+    void NotEdit()
+    {
+        ShoweditPayment = false;
+        editpayment = null;
+    }
+
+    async Task Delete()
+    {
+        if (IDPayment > 0)
+        {
+            var model = resertvation.PaymentMoney.FirstOrDefault(x => x.ID == IDPayment);
+            if (model is not null)
+            {
+                resertvation.GetTablePayments.Remove(model);
+                resertvation.PaymentMoney = resertvation.GetTablePayments;
+                await db.SaveChangeAsync();
+                IDPayment = 0;
+                ShowdeletePayment = false;
+            }
+        }
+    }
+
+    async Task DoneSavedEdit()
+    {
+        if (editpayment.Money <= 0)
+        {
+            toast.ShowInfo("برجاء ادخل المبلغ");
+        }
+        else
+        {
+            await db.PaymentMoneys.UpdateAsync(editpayment);
+            await db.SaveChangeAsync();
+            ShoweditPayment = false;
+        }
+
+    }
+
+
+    void getemplyee(int id)
+    {
+        IDEmplyee = id;
+    }
+
+    async Task SaleSaved()
+    {
+        if (!EditResertvation)
+        {
+            if (IdCustomer <= 0)
+            {
+                toast.ShowError("ادخل اسم العميل");
+            }
+            else if (resertvation.systemPayments == SystemPayment.None)
+            {
+                toast.ShowError("ادخل نظام السداد");
+            }
+            else if (resertvation.TotalPriceBuy <= 0)
+            {
+                toast.ShowError("ادخل اجمالى سعر البيع");
+            }
+            else
+            {
+                var IDproject = Unit.IdProject;
+                resertvation.IdCustomer = IdCustomer;
+                resertvation.IdEmplyee = IDEmplyee;
+                resertvation.PaymentMoney = resertvation.GetTablePayments;
+                await db.ResertvationAndSales.AddAsync(resertvation);
+                Unit.IdResetvationsale = resertvation.ID;
+                await db.SaveChangeAsync();
+                toast.ShowSuccess("تمت عملية البيع");
+                await GetUnit();
+            }
+        }
+        else
+        {
+            if (IDEmplyee.HasValue)
+            {
+                resertvation.IdEmplyee = IDEmplyee;
+            }
+            if (IdCustomer > 0)
+            {
+                resertvation.IdCustomer = IdCustomer;
+            }
+            else
+            {
+                resertvation.PaymentMoney = resertvation.GetTablePayments;
+            }
+
+           await db.ResertvationAndSales.UpdateAsync(resertvation);
+           await GetUnit();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        if (!log.ISAdmin)
+        {
+            nav.NavigateTo("");
+        }
+        await GetUnit();
+    }
+
+
+    async Task GetUnit()
+    {
+        Unit = await db.UnitProjects.Include(r => r.ReservationSale).ThenInclude(c => c.ToCustomer)
+                     .Include(r => r.ReservationSale).ThenInclude(many => many.PaymentMoney)
+                     .Include(r => r.ReservationSale).ThenInclude(e => e.ByEmplyee)
+                     .Include(p => p.Project).Include(ct => ct.Category).Include(f => f.Floor)
+                     .FirstOrDefaultAsync(x => x.Id == id);
+        EditResertvation = Unit.ISSoldDone;
+        if (EditResertvation && Unit.ReservationSale != null)
+        {
+            resertvation = Unit.ReservationSale;
+        }
+        else
+        {
+            resertvation.Unit = Unit;
+            resertvation.IdUnit = Unit.Id;
+        }
+    }
+}

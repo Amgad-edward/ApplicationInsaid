@@ -1,0 +1,144 @@
+﻿@page "/accountmovecompany/{id:int}"
+@inject IUntiWork db
+@inject ISessionStorageService session
+
+
+@if (Company is not null)
+{
+    <div class="container rightdv">
+        <HeadPage NameArbic="@Company.FullName" NameEnglish="Companys"></HeadPage>
+        @if (Company.Iscompetitivecompany)
+        {
+            <div class="text-right">
+                <h3 class="text-dark">تقارير عن هذة الشركة</h3>
+                <hr />
+                @if (Company.RepostsThisCompany is not null)
+                {
+                    @if (Company.RepostsThisCompany.Any())
+                    {
+                        @foreach (var report in Company.RepostsThisCompany)
+                        {
+                            <div class="row justify-content-between">
+                                <div class="col-md-6 text-right">
+                                    <h4>تقرير عن : @report.TheTask</h4>
+                                </div>
+                                <div class="text-right">
+
+                                    @if (report.DoneTask)
+                                    {
+                                        <h5 class="text-success"><i class="bi bi-check-all"></i></h5>
+                                    }
+                                    else
+                                    {
+                                        <h5 class="text-danger">لم يتم التقرير بعد</h5>
+                                    }
+                                </div>
+                            </div>
+                            <div class="row justify-content-between">
+                                <div class="col-md-10 text-right">
+                                    <h5 class="text-black-50">@report.Emplyee.Name</h5>
+                                    <p class="text-black-50">@report.date.ToDate()</p>
+                                    <h3>النتيجة</h3>
+                                    <p>@report.Resulte</p>
+                                </div>
+                                <div>
+                                    <button type="button" class="close text-danger" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <hr />
+                        }
+                    }
+                }
+            </div>
+
+        }
+        else if (Company.IsCompanyToBenefit)
+        {
+            <div class="text-right">
+                <h3>الفواتير</h3>
+                @if (Company.GetAllInvice != null)
+                {
+                    <div class="accordion text-right" id="accordionExample">
+                        @for (var i = 0; i < Company.GetAllInvice.Count; i++)
+                        {
+                            <div class="card">
+                                <div class="card-header" id="heading@(i)">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-link btn-block text-right" type="button" data-toggle="collapse" data-target="#collapse@(i)" aria-expanded="true" aria-controls="collapse@(i)">
+                                            @Company.GetAllInvice[i].InvoiceNumber (@Company.GetAllInvice[i].Date)
+                                        </button>
+                                    </h2>
+                                </div>
+
+                                <div id="collapse@(i)" class="collapse show" aria-labelledby="heading@(i)" data-parent="#accordionExample">
+                                    <div class="card-body text-right">
+                                        <p class="text-info">اجمالى المبلغ : @Company.GetAllInvice[i].TotalPrice.ToMoney() (@Company.GetAllInvice[i].TotalPrice.ConvertNumberToText() جنيها)</p>
+                                        <p class="text-success">اجمالى المدفوع : @Company.GetAllInvice[i].ManeyPaymnet.ToMoney() (@Company.GetAllInvice[i].ManeyPaymnet.ConvertNumberToText() جنيها)</p>
+                                        <p class="text-danger">اجمالى المتبقى : @Company.GetAllInvice[i].ManeyRemaining.ToMoney() (@Company.GetAllInvice[i].ManeyRemaining.ConvertNumberToText() جنيها)</p>
+                                        <h3 class="text-black-50">الخامات</h3>
+                                        <br />
+                                        <ShowTable itemtype="ItemInvioce" TheadClass="thead-light" Items="@Company.GetAllInvice[i].Items">
+                                            <Columns>
+                                                <th>الخامة</th>
+                                                <th>الكمية</th>
+                                            </Columns>
+                                            <Rows>
+                                                <td>@context.NameMaterial</td>
+                                                <td>
+                                                    <p>@context.WeightName</p>
+                                                    <p>(@context.WeightsCount)</p>
+                                                 </td>
+                                            </Rows>
+                                        </ShowTable>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                }
+            </div>
+            <hr />
+
+        }
+    </div>
+}
+
+
+
+@code {
+
+    [Parameter]
+    public int id { get; set; }
+
+    [Inject]
+    public NavigationManager? nav { get; set; }
+
+    [Inject]
+    public IToastService? toast { get; set; }
+
+    OtherCompanies? Company = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        if (!log.ISAdmin)
+        {
+            nav.NavigateTo("");
+        }
+        await GetCompany();
+    }
+
+    private async Task GetCompany()
+    {
+        Company = await db.OtherCompanies.Include(M => M.Materials).ThenInclude(b => b.BuildingCosts).ThenInclude(m=>m.ManeyPaymentCosts)
+                         .Include(M => M.Materials).ThenInclude(w=>w.Weight)
+                         .Include(M => M.Materials).ThenInclude(Finish => Finish.FinishCosts).ThenInclude(m=>m.ManeyPaymentCosts)
+                         .Include(f => f.SaleToFinish)
+                         .Include(r => r.RepostsThisCompany).ThenInclude(e => e.Emplyee)
+                         .Include(acc => acc.Accounts).FirstOrDefaultAsync(x => x.Id == id);
+    }
+
+}

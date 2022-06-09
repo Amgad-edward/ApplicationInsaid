@@ -1,0 +1,283 @@
+﻿@page "/addmaterails"
+@inject IUntiWork db
+@inject IToastService toast
+
+<div class="container rightdv">
+    <HeadPage NameArbic="تسجيل خامات" NameEnglish="Add Materails"></HeadPage>
+
+    <div class="card">
+        <div class="card-body">
+            <EditForm Model="addmatrial" OnValidSubmit="AddMareailTodb">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group text-right">
+                            <label>اسم الخامة</label>
+                            <InputText @bind-Value="addmatrial.NameMaterial" class="form-control"></InputText>
+                        </div>
+                    </div>
+                      @if(Companies is not null)
+                        {
+                          <div class="col-md-4">
+                              <div class="form-group text-right">
+                            <label>حدد الشركة الموردة للخامة</label>
+                            <select @bind="addmatrial.IdCompany" class="form-control">
+                                <option value="0">اختر شركة التوريد</option>
+                                @foreach (var company in Companies)
+                                {
+                                    <option value="@company.Id">@company.FullName</option>
+                                }
+                            </select>
+                         </div>
+                          </div>
+                        }
+                    @if (weights != null)
+                    {
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label>معيار الكمية</label>
+                                <InputSelect @bind-Value="addmatrial.Idweight" class="form-control">
+                                    <option value="0">اختر معيار الكمية</option>
+                                    @foreach (var item in weights)
+                                    {
+                                    <option value="@item.Id">@item.NameTitel</option>
+                                    }
+                            </InputSelect>
+                        </div>
+                    </div>
+                    }
+                    else
+                    {
+                        <div class="col-md-4 text-right">
+                            <p class="text-danger">يجب عليك تسجيل مقياس كميات الوزن</p>
+                        </div>
+                    }
+                    <div class="col-md-4">
+                        <div class="form-group text-right">
+                            <label>كود الخامة</label>
+                            <InputText @bind-Value="addmatrial.ICodeGS1" class="form-control"></InputText>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-right mt-3">
+                        <button type="submit" class="btn btn-outline-primary">اضافة الخامة</button>
+                    </div>
+
+                </div>
+            </EditForm>
+        </div>
+    </div>
+    <hr />
+    <div style="margin-bottom:100px">
+        <RadzenGrid AllowFiltering="true" ColumnWidth="150px" TItem="Materials" Data="@_matreails"
+                    AllowSorting="true" PageSize="20" AllowPaging="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+            <Columns>
+                <RadzenGridColumn TItem="Materials" Property="NameMaterial" Title="الخامة"></RadzenGridColumn>
+                <RadzenGridColumn TItem="Materials" Property="WeightTitel" Title="مقدار الكمية"></RadzenGridColumn>
+                <RadzenGridColumn TItem="Materials" Context="data" Title="#####">
+                    <Template>
+                        <Button T_type="Materials" ModalID="editmateail" eventBack="EditMatreailInfo" Class="btn-outline-light text-dark" TheValue="data">
+                            <Render>
+                                <i class="bi bi-pencil-square"></i>
+                            </Render>
+                        </Button>
+                        <Button T_type="int" ModalID="Delmateail" eventBack="Getid" Class="btn-outline-danger" TheValue="data.Id">
+                            <Render>
+                                <i class="bi bi-trash"></i>
+                            </Render>
+                        </Button>
+                    </Template>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+
+</div>
+
+
+<!-- Modal Edit -->
+<div class="modal fade" id="editmateail" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit Material</h5>
+                <button type="button" class="close" @onclick="noedit" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (Editmatrial is not null)
+            {
+                <div class="modal-body">
+                    <div class="col-md-12">
+                        <div class="form-group text-right">
+                            <label>اسم الخامة</label>
+                            <input type="text" @bind-value="Editmatrial.NameMaterial" class="form-control" />
+                        </div>
+                        @if(Companies is not null)
+                        {
+                         <div class="form-group text-right">
+                            <label>حدد الشركة الموردة للخامة</label>
+                            <select @bind="Editmatrial.IdCompany" class="form-control">
+                                <option value="0">اختر شركة التوريد</option>
+                                @foreach (var company in Companies)
+                                {
+                                    <option value="@company.Id">@company.FullName</option>
+                                }
+                            </select>
+                         </div>
+                        }
+                        <div class="form-group text-right">
+                            <label>معيار الكمية</label>
+                            <select @bind="Editmatrial.Idweight" class="form-control">
+                                @foreach (var item in weights)
+                                {
+                                    <option value="@item.Id">@item.NameTitel</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-group text-right">
+                            <label>كود الخامة</label>
+                            <input type="text" @bind-value="Editmatrial.ICodeGS1" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="noedit" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="DoneEdit" class="btn btn-primary">Save changes</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal Delete-->
+<div class="modal fade" id="Delmateail" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete Material</h5>
+                <button type="button" class="close" @onclick="NotDelete" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (materialsdelete is not null)
+            {
+                @if (materialsdelete.IsAddMaterailInCost)
+                {
+                    <div class="modal-body text-right">
+                        <h6 class="text-danger">لا يمكن حذف هذة الخامة للانها مسجلة فى تنفيذات (@materialsdelete.NameMaterial)</h6>
+                    </div>
+                     <div class="modal-footer">
+                    <button type="button" @onclick="NotDelete" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                   </div>
+                }
+                else
+                {
+                <div class="modal-body text-right">
+                    <p>هل تريد حذف الخامة @materialsdelete.NameMaterial ??</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="NotDelete" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="Delete" class="btn btn-danger">Yes</button>
+                </div>
+                }
+                
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+    IEnumerable<Weight>? weights = null;
+    IEnumerable<Materials>? _matreails = null;
+    IEnumerable<OtherCompanies>? Companies = null;
+    Materials? addmatrial = new Materials();
+    Materials? Editmatrial = null;
+    Materials? materialsdelete = null;
+    int idmaterail;
+    bool showdelete = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        weights = await db.Weights.Include(w => w.Weightsmall).AsNoTracking().ToListAsync();
+        await GetAllMaterails();
+    }
+
+    void Getid(int id)
+    {
+        idmaterail = id;
+        materialsdelete = _matreails.FirstOrDefault(x => x.Id == id);
+        showdelete = true;
+    }
+
+    async Task GetAllMaterails()
+    {
+        _matreails = await db.Materials.Include(w => w.Weight)
+                            .Include(x => x.BuildingCosts)
+                            .Include(f => f.FinishCosts)
+                            .ToListAsync();
+        Companies = await db.OtherCompanies.GetAsyncNoTracking(x => x.IsCompanyToBenefit);
+    }
+
+    async Task DoneEdit()
+    {
+        if(Editmatrial.IdCompany == 0)
+        {
+            Editmatrial.IdCompany = null;
+        }
+        await db.SaveChangeAsync();
+        Editmatrial = null;
+    }
+
+    async Task Delete()
+    {
+
+        await db.Materials.DeleteAsync(idmaterail);
+        materialsdelete = null;
+        showdelete = false;
+        await GetAllMaterails();
+
+    }
+
+    void NotDelete()
+    {
+        idmaterail = 0;
+        materialsdelete = null;
+        showdelete = false;
+    }
+
+    void noedit()
+    {
+        Editmatrial = null;
+    }
+
+    async Task AddMareailTodb()
+    {
+        if (addmatrial.Idweight <= 0)
+        {
+            toast.ShowError("برجاء اختيار معيار قياس الكمية");
+        }
+        else if (await db.Materials.AnyAsync(x => x.NameMaterial == addmatrial.NameMaterial))
+        {
+            toast.ShowInfo($"هذة الخامة {addmatrial.NameMaterial} مضافة مسبقا!!");
+        }
+        else
+        {
+            if(addmatrial.IdCompany == 0)
+            {
+                addmatrial.IdCompany = null;
+            }
+            await db.Materials.AddAsync(addmatrial);
+            addmatrial = new Materials();
+            await GetAllMaterails();
+        }
+    }
+
+    void EditMatreailInfo(Materials materials)
+    {
+        Editmatrial = materials;
+    }
+
+}

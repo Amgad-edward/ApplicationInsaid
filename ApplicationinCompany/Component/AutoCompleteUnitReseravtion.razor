@@ -1,0 +1,54 @@
+﻿@inject IUntiWork db
+
+@if(Units != null)
+{
+    <BlazoredTypeahead @bind-Value="resertvation" @onselectionchange="async ()=> await EventGetUnit.InvokeAsync(resertvation)" SearchMethod="AutoCompelet">
+        <SelectedTemplate>
+            @context.NameUint
+        </SelectedTemplate>
+        <ResultTemplate>
+            @context.NameUint
+        </ResultTemplate>
+    </BlazoredTypeahead>
+}
+else
+{
+    <p class="text-danger">لا توجد وحدات مباعة</p>
+}
+
+
+@code {
+
+    [Parameter]
+    public EventCallback<ResertvationAndSale> EventGetUnit { get; set; }
+
+    private IEnumerable<ResertvationAndSale>? Units = null;
+
+    private ResertvationAndSale? resertvation = new ResertvationAndSale();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await getunits();
+    }
+
+    async Task getunits()
+    {
+        var getunits = await db.ResertvationAndSales.Include(c => c.ToCustomer)
+                      .Include(u=>u.Unit)
+                      .Include(un => un.Unit).ThenInclude(pro => pro.Project)
+                      .Include(un => un.Unit).ThenInclude(ca => ca.Category)
+                      .Include(un => un.Unit).ThenInclude(f => f.Floor)
+                      .Include(finish=>finish.FinishUnit)
+                      .AsNoTracking().ToListAsync();
+        Units = getunits.Where(x =>!x.IsUnitISFinish);
+    }
+
+    async Task<IEnumerable<ResertvationAndSale>> AutoCompelet(string text)
+    {
+        return await Task.FromResult(Units.Where(x => x.NameUint.Contains(text)));
+    }
+
+
+
+
+}

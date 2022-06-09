@@ -1,0 +1,41 @@
+﻿@typeparam itemtype
+
+
+ <table class="table table-bordered table-hover @Class">
+     <thead class="@TheadClass">
+         <tr>
+             @Columns
+         </tr>
+     </thead>
+     <tbody>
+         @foreach (var item in Items)
+         {
+             <tr>
+                 @Rows(item)
+             </tr>
+         }
+     </tbody>
+ </table>
+
+
+
+@code {
+
+    [Parameter]
+    public RenderFragment? Columns { get; set; }
+
+    [Parameter]
+    public RenderFragment<itemtype>? Rows { get; set; }
+
+    [Parameter]
+    public IEnumerable<itemtype>? Items { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; } = "";
+
+    [Parameter]
+    public string? TheadClass { get; set; } = "";
+
+
+
+}

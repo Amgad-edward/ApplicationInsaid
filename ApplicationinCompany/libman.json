@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "bootstrap@4.6.0",
+      "destination": "wwwroot/bootstrap/"
+    },
+    {
+      "library": "animateCSS@1.2.2",
+      "destination": "wwwroot/animateCSS/"
+    },
+    {
+      "library": "animate.css@4.1.1",
+      "destination": "wwwroot/animate.css/"
+    },
+    {
+      "library": "jquery@3.6.0",
+      "destination": "wwwroot/jquery/"
+    },
+    {
+      "library": "bootstrap-icons@1.8.1",
+      "destination": "wwwroot/bootstrap-icons/"
+    }
+  ]
+}

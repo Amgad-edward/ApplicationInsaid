@@ -1,0 +1,28 @@
+﻿@typeparam T_type
+
+
+<button type="button" data-toggle="modal" data-target="#@ModalID" class="btn @Class" title="" @onclick="async ()=> await eventBack.InvokeAsync(TheValue)" >
+    @Render
+</button>
+
+@code {
+
+    [Parameter]
+    public T_type? TheValue { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; } = "";
+
+    [Parameter]
+    public RenderFragment? Render { get; set; }
+
+    [Parameter]
+    public EventCallback<T_type> eventBack { get; set; }
+
+    [Parameter]
+    public string? AddTitle { get; set; } = "";
+
+    [Parameter]
+    public string? ModalID { get; set; } = "";
+
+}

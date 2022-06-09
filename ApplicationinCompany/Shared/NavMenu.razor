@@ -1,0 +1,62 @@
+﻿@inject ISessionStorageService Session
+
+
+<div class="top-row ps-3 navbar navbar-dark">
+   
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+     <div class="container-fluid">
+        <div class="row mt-5 mb-3"  >
+            <div class="col-8 mt-1">
+                 <h3 class="text-light">@Hex.Company.NameCompanyEng.ToUpper()</h3>
+            </div>
+            <div class="col-4"> <img src="@Hex.Company.Logo.ShowImage()" style="width:31px" /></div>
+        </div>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        @if (log.ISAdmin || log.Emplyee?.TheJop == Jop.DataEntry || log.Emplyee?.TheJop == Jop.Engineer || log.Emplyee?.TheJop == Jop.Maneger)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="makers">
+                    <span class="icofont-male" aria-hidden="true"></span> الصناع
+                </NavLink>
+            </div>
+        }
+        @if (log.ISAdmin || log.Emplyee?.TheJop == Jop.DataEntry || log.Emplyee?.TheJop == Jop.Marketing)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="customers">
+                    <span class="icofont-user-male" aria-hidden="true"></span> العملاء
+                </NavLink>
+            </div>
+        }
+      
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private LogAdmins? log = new LogAdmins();
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        log = await Session.GetItemAsync<LogAdmins>("loguser");
+    }
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

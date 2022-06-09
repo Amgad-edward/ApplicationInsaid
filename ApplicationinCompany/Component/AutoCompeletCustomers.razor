@@ -1,0 +1,38 @@
+﻿@inject IUntiWork db
+
+@if(Allcustomers != null)
+{
+    
+<BlazoredTypeahead @bind-Value="customer" @onselectionchange="async ()=> await GetEventCallback.InvokeAsync(customer.Id)" SearchMethod="Autocomplete">
+    <SelectedTemplate>
+        @context.NameCustomer
+    </SelectedTemplate>
+    <ResultTemplate>
+        @context.NameCustomer &nbsp; <span class="text-black-50">@context.Jop</span>
+    </ResultTemplate>
+</BlazoredTypeahead>
+}
+
+
+@code {
+
+
+    [Parameter]
+    public EventCallback<int> GetEventCallback { get; set; }
+
+
+    Customer? customer = new Customer();
+    IEnumerable<Customer>? Allcustomers = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Allcustomers = await db.Customer.GetAllAsycnNoTracking();
+    }
+
+    private async Task<IEnumerable<Customer>> Autocomplete(string text)
+    {
+        return await Task.FromResult(Allcustomers.Where(x => x.NameCustomer.ToLower().Contains(text)));
+    }
+
+
+}

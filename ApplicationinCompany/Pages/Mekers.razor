@@ -1,0 +1,283 @@
+﻿@page "/makers"
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject IToastService toast
+
+<div class="container rightdv">
+    <HeadPage NameArbic="العمالة" NameEnglish="Makres"></HeadPage>
+    <button class="btn btn-primary mb-4 mt-2" type="button" data-toggle="collapse" data-target="#addmakers" aria-expanded="false" aria-controls="addmakers">
+        اضافة عامل
+    </button>
+    <div class="collapse" id="addmakers">
+        <div class="card card-body">
+            <EditForm Model="addmaker" OnValidSubmit="AddMaker">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <div class="text-right">
+                    <h2>اضافة عامل جديد</h2>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label>الاســ م</label>
+                                <InputText @bind-Value="addmaker.NameMaker" class="form-control"></InputText>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label>التخصص</label>
+                                <InputText @bind-Value="addmaker.JopTitel" class="form-control"></InputText>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label>ارقم الهاتف</label>
+                                <InputText @bind-Value="addmaker.Phones" class="form-control"></InputText>
+                            </div>
+                        </div>
+                        @if (Weight is not null)
+                        {
+                            <div class="col-md-4">
+                                <div class="form-group text-right">
+                                    <label>طريقة حساب الكمية</label>
+                                    <InputSelect @bind-Value="addmaker.Idweight" class="form-control">
+                                        <option value="0">اختر مقياس</option>
+                                        @foreach (var w in Weight)
+                                        {
+                                        <option value="@w.Id">@w.NameWeight</option>
+                                        }
+                                </InputSelect>
+                            </div>
+                        </div>
+                        }
+                        <div class="col-md-4">
+                            <div class="form-group text-right">
+                                <label>الرقم الضريبى</label>
+                                <InputText @bind-Value="addmaker.TaxNumber" class="form-control"></InputText>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary mt-2">اضافة</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+
+    <hr />
+    <div style="margin-bottom:100px">
+        <RadzenGrid AllowFiltering="true" ColumnWidth="150px" TItem="Maker" Data="mekers"
+                    AllowSorting="true" PageSize="12" AllowPaging="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+            <Columns>
+                <RadzenGridColumn TItem="Maker" Title="اسم العامل">
+                    <Template>
+                        <div class="text-right">
+                            <h5>@context.NameMaker</h5>
+                            <p>متوسط التقيم من الاعمال السابقة</p>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" style="width: @context.AverageEvaluation%;" aria-valuenow="context.AverageEvaluation" aria-valuemin="0" aria-valuemax="100">@context.AverageEvaluation%</div>
+                            </div>
+                        </div>
+                    </Template>
+                </RadzenGridColumn>
+
+                <RadzenGridColumn TItem="Maker" Property="JopTitel" Title="التخصص">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="Maker" Property="Phones" Title="الهاتف">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="Maker" Title="متوسط الاجرة">
+                    <Template>
+                        <h3>(@(context.AveragePrice > 0 ?context.AveragePrice.ConvertNumberToText() :"لم يتم له سابق اعمال"))</h3>
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="Maker" Title="########">
+                    <Template>
+                        <Button Class="btn-outline-light text-dark" ModalID="editmaker" eventBack="EditThis" T_type="Maker" TheValue="@context" AddTitle="تعديل بيانات">
+                            <Render>
+                                <i class="bi bi-pencil-square"></i>
+                            </Render>
+                        </Button>
+                        <Button Class="btn-outline-danger" ModalID="deletemaker" eventBack="EditThis" T_type="Maker" TheValue="@context" AddTitle="حذف">
+                            <Render>
+                                <i class="bi bi-trash"></i>
+                            </Render>
+                        </Button>
+                        @if (ISAdmin)
+                        {
+                            <a class="btn btn-primary mr-1" href="/detialmaker/@context.Id" title="اظهار تفاصيل"><i class="bi bi-list-check"></i></a>
+                        }
+                    </Template>
+                </RadzenGridColumn>
+
+            </Columns>
+        </RadzenGrid>
+    </div>
+
+</div>
+
+<!-- Modal Edit -->
+<div class="modal fade" id="editmaker" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit Maker</h5>
+                <button type="button" class="close" @onclick="notedit" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (edit != null)
+            {
+                <EditForm Model="edit" OnValidSubmit="SavedEdite">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-11">
+                                <div class="form-group text-right">
+                                    <label>الاســ م</label>
+                                    <InputText @bind-Value="edit.NameMaker" class="form-control"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>التخصص</label>
+                                    <InputText @bind-Value="edit.JopTitel" class="form-control"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>ارقم الهاتف</label>
+                                    <InputText @bind-Value="edit.Phones" class="form-control"></InputText>
+                                </div>
+                                <div class="form-group text-right">
+                                    <label>طريقة حساب الكمية</label>
+                                    <InputSelect @bind-Value="edit.Idweight" class="form-control">
+                                        <option value="0">اختر مقياس</option>
+                                        @foreach (var w in Weight)
+                                        {
+                                        <option value="@w.Id">@w.NameWeight</option>
+                                        }
+                                </InputSelect>
+                            </div>
+                            <div class="form-group text-right">
+                                <label>الرقم الضريبى</label>
+                                <InputText @bind-Value="edit.TaxNumber" class="form-control"></InputText>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="notedit" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success">Save changes</button>
+                </div>
+            </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal Delete-->
+<div class="modal fade" id="deletemaker" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete</h5>
+                <button type="button" class="close" @onclick="notedit" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (edit != null)
+            {
+                if (edit.BuildingCosts.Any() || edit.FinishCosts.Any())
+                {
+                    <div class="modal-body text-danger">
+                        <h4>هناك اعمال وحسابات مسجلة باسم @edit.NameMaker ولا يمكن الحذف </h4>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" @onclick="notedit" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                }
+                else
+                {
+                    <div class="modal-body">
+                        هل تريد حذف @edit.NameMaker ??
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" @onclick="notedit" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" @onclick="Delete" class="btn btn-danger">Yes</button>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+    Maker? addmaker = new Maker();
+    Maker? edit = null;
+    bool ISAdmin = false;
+
+    IEnumerable<Maker>? mekers = null;
+
+    IEnumerable<Weight>? Weight = null;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        ISAdmin = log.ISAdmin;
+        Weight = await db.Weights.GetAllAsycnNoTracking();
+        await GetAllMakers();
+    }
+
+    void EditThis(Maker maker)
+    {
+        edit = maker;
+    }
+    void notedit()
+    {
+        edit = null;
+    }
+
+    async Task Delete()
+    {
+        if (edit is not null)
+        {
+            await db.Makers.DeleteAsync(edit.Id);
+            edit = null;
+            await GetAllMakers();
+        }
+    }
+
+    async Task SavedEdite()
+    {
+        await db.SaveChangeAsync();
+        edit = null;
+    }
+
+    async Task GetAllMakers()
+    {
+        var Makets = await db.Makers.Include(b => b.BuildingCosts).ThenInclude(p => p.Project)
+                            .Include(b => b.BuildingCosts).ThenInclude(p => p.ManeyPaymentCosts)
+                           .Include(f => f.FinishCosts).ThenInclude(c => c.FinishUnit).ThenInclude(c => c.Customer)
+                           .Include(w => w.Weight).ToListAsync();
+        mekers = Makets.OrderByDescending(x => x.AverageEvaluation);
+
+    }
+
+    async Task AddMaker()
+    {
+        if (addmaker.Idweight == 0)
+            addmaker.Idweight = null;
+
+        if (await db.Makers.AnyAsync(x => x.NameMaker == addmaker.NameMaker))
+        {
+            toast.ShowError("هذا الاسم مضاف مسبقا");
+        }
+        else
+        {
+            addmaker.GideID = $"M{Guid.NewGuid()}";
+            await db.Makers.AddAsync(addmaker);
+            toast.ShowSuccess($"تمت اضافة {addmaker.NameMaker} بنجاح");
+            addmaker = new Maker();
+            await GetAllMakers();
+        }
+    }
+
+}

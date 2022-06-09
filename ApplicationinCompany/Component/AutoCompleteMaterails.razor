@@ -1,0 +1,40 @@
+﻿@inject IUntiWork db
+
+
+@if(_materials is not null)
+{
+    <BlazoredTypeahead @bind-Value="Material" @onselectionchange="async ()=> await GetMaterail.InvokeAsync(Material)" SearchMethod="AutoComplete">
+        <SelectedTemplate>
+            @context.NameMaterial
+        </SelectedTemplate>
+        <ResultTemplate>
+            @context.NameMaterial &nbsp; <span class="text-black-50">@context.WeightTitel</span>
+        </ResultTemplate>
+    </BlazoredTypeahead>
+}
+else
+{
+    <p class="text-danger">لا توجد خامات مسجلة</p>
+}
+
+
+@code {
+
+    [Parameter]
+    public EventCallback<Materials> GetMaterail { get; set; }
+
+    Materials? Material = new Materials();
+
+    IEnumerable<Materials>? _materials = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _materials = await db.Materials.Include(w => w.Weight).AsNoTracking().ToListAsync();
+    }
+
+    async Task<IEnumerable<Materials>> AutoComplete(string text)
+    {
+        return await Task.FromResult(_materials.Where(x => x.NameMaterial.ToLower().Contains(text)));
+    }
+
+}

@@ -1,0 +1,306 @@
+﻿@page "/addemplyee"
+
+@inject IUntiWork db
+@inject ISessionStorageService session
+@inject IToastService toast
+
+<div class="container rightdv">
+    <HeadPage NameArbic="اضافة مواظفين" NameEnglish="Add New Employees"></HeadPage>
+    <EditForm Model="addemplyee" OnValidSubmit="AddEmplyeedb">
+
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group text-right">
+                                    <label>الاسم</label>
+                                    <InputText @bind-Value="addemplyee.Name" class="form-control"></InputText>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group text-right">
+                                    <label>نوع الوظيفة</label>
+                                    <InputSelect @bind-Value="addemplyee.TheJop" class="form-control">
+                                        @foreach (Jop item in Enum.GetValues(typeof(Jop)))
+                                        {
+                                            <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group text-right">
+                                    <label>نوع الراتب</label>
+                                    <InputSelect @bind-Value="addemplyee.type" class="form-control">
+                                        @foreach (TypeSalery item in Enum.GetValues(typeof(TypeSalery)))
+                                        {
+                                            <option value="@item">@item.ShowDiscruotionEnum()</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            @if (addemplyee.type == TypeSalery.BaseAndPersant)
+                            {
+                                <div class="col-md-3">
+                                    <div class="form-group text-right">
+                                        <label>الراتب الثابت</label>
+                                        <InputNumber @bind-Value="addemplyee.BaseSalery" class="form-control"></InputNumber>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group text-right">
+                                        <label>النسبة %</label>
+                                        <InputNumber @bind-Value="addemplyee.Persant" class="form-control"></InputNumber>
+                                    </div>
+                                </div>
+                            }
+                            else if (addemplyee.type == TypeSalery.Baseonly)
+                            {
+                                <div class="col-md-3">
+                                    <div class="form-group text-right">
+                                        <label>الراتب الثابت</label>
+                                        <InputNumber @bind-Value="addemplyee.BaseSalery" class="form-control"></InputNumber>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-md-3">
+                                    <div class="form-group text-right">
+                                        <label>النسبة %</label>
+                                        <InputNumber @bind-Value="addemplyee.Persant" class="form-control"></InputNumber>
+                                    </div>
+                                </div>
+                            }
+                            <div class="col-md-3">
+                                <div class="form-group text-right">
+                                    <label>المسمى الوظيفى</label>
+                                    <InputText @bind-Value="addemplyee.TitleJop" class="form-control"></InputText>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group text-right">
+                                    <label>تاريخ الميلاد</label>
+                                    <InputDate @bind-Value="addemplyee.DateBirth" class="form-control"></InputDate>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group text-right">
+                                    <label>تاريخ بداية العمل</label>
+                                    <InputDate @bind-Value="addemplyee.StartWork" class="form-control"></InputDate>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group text-right">
+                                    <label>ساعة الحضور</label>
+                                    <input type="time" @bind-value="addemplyee.StartTimeWork" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group text-right">
+                                    <label>ساعة الانصراف</label>
+                                    <input type="time" @bind-value="addemplyee.EndTimeWork" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group text-right">
+                                    <label>يوم الاجازة</label>
+                                    <InputSelect @bind-Value="addemplyee.WeekEnd" class="form-control">
+                                        @foreach (var day in Enum.GetValues(typeof(DayOfWeek)))
+                                        {
+                                            <option value="@day">@day.ToString()</option>
+                                        }
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            <div class="col-md-5 mt-4">
+                                <div class="custom-file text-right">
+                                    <InputFile OnChange="getimage" class="custom-file-input"></InputFile>
+                                    <label class="custom-file-label ">اختر الصورة</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <img src="@addemplyee.Image.ShowImage()" class="img-fluid" style="width:75px;" />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">اضافة</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+    <hr />
+    @if (_emplyees != null)
+    {
+        <ShowTable itemtype="Emplyee" Context="e" Items="_emplyees" Class="table-light" TheadClass="thead-dark">
+            <Columns>
+                <th>الاسم</th>
+                <th>الوظيفة</th>
+                <th>السن</th>
+                <th>مدة العمل</th>
+                <th>الراتب</th>
+                <th>Control</th>
+            </Columns>
+            <Rows>
+                <td>@e.Name</td>
+                <td>@e.TitleJop</td>
+                <td>@e.Age</td>
+                <td>@e.AgeInWork</td>
+                <td>@Math.Round(e.BaseSalery).ToMoney()</td>
+                <td>
+                    @if (Admin)
+                    {
+                        <a class="btn btn-info" href="/detaliemp/@e.Id"><i class="bi bi-file-bar-graph"></i></a>
+                    }
+                    <Button Class="btn-danger" T_type="Emplyee" eventBack="getemp" ModalID="deleteemp" TheValue="@e">
+                        <Render>
+                            <i class="bi bi-trash"></i>
+                        </Render>
+                    </Button>
+                </td>
+            </Rows>
+        </ShowTable>
+    }
+
+</div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="deleteemp" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Delete Employee</h5>
+                <button type="button" class="close" @onclick="DontDelete" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            @if (ShowDelete)
+            {
+                <div class="modal-body text-right">
+                    <h3>هل تريد حذف (@empDelete.Name) ??</h3>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" @onclick="DontDelete" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" @onclick="DeleteThisEmplyee" class="btn btn-danger">Delete</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+    [Inject]
+    public NavigationManager nav { get; set; }
+
+    IEnumerable<Emplyee>? _emplyees = null;
+
+    Emplyee addemplyee = new Emplyee();
+
+    Emplyee empDelete = new Emplyee();
+    bool ShowDelete = false;
+    int IDEmplyeeDelete;
+
+
+    bool Admin = false;
+
+    string Image = "";
+    protected override async Task OnInitializedAsync()
+    {
+        var log = await session.GetItemAsync<LogAdmins>("loguser");
+        Admin = log.ISAdmin;
+        if (!log.ISAdmin || log.Emplyee.TheJop == Jop.Marketing ||log.Emplyee.TheJop == Jop.Engineer )
+        {
+            nav.NavigateTo("");
+        }
+       
+        await GetAllEmplyees();
+    }
+
+    void getemp(Emplyee __emplyee)
+    {
+        ShowDelete = true;
+        empDelete = __emplyee;
+        IDEmplyeeDelete = __emplyee.Id;
+    }
+
+    void DontDelete()
+    {
+        ShowDelete = false;
+        empDelete = new Emplyee();
+        IDEmplyeeDelete = 0;
+    }
+
+    async Task getimage(InputFileChangeEventArgs e)
+    {
+        if (e.FileCount > 0)
+        {
+            if (Path.GetExtension(e.File.Name) == ".jpg" || Path.GetExtension(e.File.Name) == ".png")
+            {
+                var Stream = new MemoryStream();
+                var extintion = Path.GetExtension(e.File.Name).Replace(".", "");
+                var type = $"image/{extintion}";
+                await e.File.OpenReadStream().CopyToAsync(Stream);
+                addemplyee.Image = Stream.ToArray();
+            }
+            else
+            {
+                toast.ShowError("الملف المدخل غير صالح");
+            }
+
+        }
+
+    }
+
+    async Task GetAllEmplyees()
+    {
+        _emplyees = await db.Emplyees.Include(s => s.AllSalesFormThisEmplyee).ThenInclude(u => u.Unit).ThenInclude(p => p.Project)
+                         .Include(a => a.AllSaleToFinishUnit)
+                         .Include(w => w.saleryPayments)
+                         .Include(f => f.AttendingAndLeavings)
+                         .Include(g => g.Reports).ThenInclude(c => c.Customer)
+                         .Include(t => t.TaskCarries).AsNoTracking().ToListAsync();
+    }
+
+    async Task AddEmplyeedb()
+    {
+        addemplyee.GideID = Guid.NewGuid().ToString();
+        await db.Emplyees.AddAsync(addemplyee);
+        addemplyee = new Emplyee();
+        await GetAllEmplyees();
+    }
+
+    async Task DeleteThisEmplyee()
+    {
+        if (IDEmplyeeDelete > 0)
+        {
+            try
+            {
+                await db.Emplyees.DeleteAsync(IDEmplyeeDelete);
+                ShowDelete = false;
+                IDEmplyeeDelete = 0;
+                toast.ShowSuccess($"تم حذف الموظف {empDelete.Name}");
+                empDelete = new Emplyee();
+                await GetAllEmplyees();
+            }
+            catch
+            {
+                toast.ShowError($"لا يمكن حذف هذا الموظف");
+                ShowDelete = false;
+                IDEmplyeeDelete = 0;
+               empDelete = new Emplyee();
+            }
+
+        }
+    }
+}
